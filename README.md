@@ -18,16 +18,26 @@
 
 ## ドキュメント
 
-要件定義書は章ごとに分割している。詳細は以下を参照。
+- **[要件定義書(全8章・確定 v1.0)](./docs/requirements/README.md)**
+- **[開発ドキュメント](./docs/development/README.md)** — [技術スタック](./docs/development/tech-stack.md) / [フォルダ構成](./docs/development/folder-structure.md) / [実装ロードマップ](./docs/development/roadmap.md)
+- **[デザイン資産](./docs/design/README.md)** — 確定UIモック
+- 開発規約は [AGENTS.md](./AGENTS.md)(= CLAUDE.md が参照)
 
-- **[要件定義書(インデックス)](./docs/requirements/README.md)**
-  - [第1章 プロダクト概要](./docs/requirements/01-product-overview.md) — 確定
-  - [第2章 ターゲットユーザー(ペルソナ)](./docs/requirements/02-personas.md) — ドラフト
+## 動かし方
+
+```bash
+npm install
+npm run web      # ブラウザで http://localhost:8081(動作確認の最短経路)
+```
+
+iOS/Android 実機は Development Build が必要(SDK 55 は Expo Go 非対応)。
 
 ## ステータス
 
-要件定義フェーズ(ドラフト v0.3)。コードベースは未着手。
+要件定義 v1.0 完了。**MVP実装中**(フェーズ1〜2 + CSV出力/設定/4タブ)。
+Webで「撮る→確認→保存→一覧→出力」のコアフローが動作(OCRはモック)。
+次: 認証・同期(Supabase)→ OCR本実装(Claude API)→ 課金。詳細は[ロードマップ](./docs/development/roadmap.md)。
 
 ---
 
-🤖 ドキュメント整備に [Claude Code](https://claude.com/claude-code) を使用
+🤖 [Claude Code](https://claude.com/claude-code) を使用
