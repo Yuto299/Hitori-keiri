@@ -1,8 +1,8 @@
 # ひとり経理(Hitori Keiri)要件定義書
 
-- バージョン: 0.10 (Draft)
+- バージョン: 1.0
 - 最終更新: 2026-05-26
-- ステータス: 第1〜4章確定 / 第5〜8章ドラフト(全8章そろい)
+- ステータス: 全8章確定(MVP要件定義 完了)
 
 本要件定義書は章ごとにファイルを分割している。各章の最新ステータスは下表を参照。
 
@@ -14,10 +14,10 @@
 | 2 | ターゲットユーザー(ペルソナ) | 確定 | [02-personas.md](./02-personas.md) |
 | 3 | 機能要件 / ユーザーストーリー | 確定 | [03-functional-requirements.md](./03-functional-requirements.md) |
 | 4 | 画面設計 / UXフロー | 確定 | [04-screen-design.md](./04-screen-design.md) |
-| 5 | データモデル / CSV仕様 | ドラフト | [05-data-model-csv.md](./05-data-model-csv.md) |
-| 6 | OCR / AI学習の技術方針 | ドラフト | [06-ocr-ai.md](./06-ocr-ai.md) |
-| 7 | 非機能要件(性能・セキュリティ・プライバシー) | ドラフト | [07-non-functional.md](./07-non-functional.md) |
-| 8 | 収支シミュレーション | ドラフト | [08-financials.md](./08-financials.md) |
+| 5 | データモデル / CSV仕様 | 確定 | [05-data-model-csv.md](./05-data-model-csv.md) |
+| 6 | OCR / AI学習の技術方針 | 確定 | [06-ocr-ai.md](./06-ocr-ai.md) |
+| 7 | 非機能要件(性能・セキュリティ・プライバシー) | 確定 | [07-non-functional.md](./07-non-functional.md) |
+| 8 | 収支シミュレーション | 確定 | [08-financials.md](./08-financials.md) |
 
 ## 章構成の方針
 
