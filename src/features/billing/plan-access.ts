@@ -5,9 +5,9 @@
  * プラン定義そのものは config/plans.ts。判定ロジックはここに集約する。
  */
 
-import { PLANS, type PlanId } from "@/config/plans";
+import { PLANS, type PlanId } from '@/config/plans';
 
-/** 指定プランで対応形式CSV(freee/マネフォ/弥生)を出せるか */
+/** 指定プランで対応形式CSV(freee/マネフォ/弥生)を出せるか(FR-16〜18) */
 export function canExportAccountingCsv(plan: PlanId): boolean {
   return PLANS[plan].features.accountingCsv;
 }

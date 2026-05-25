@@ -30,15 +30,16 @@
 
 ## 2. フェーズ詳細
 
-### フェーズ1:ドメイン基盤・ナビゲーション(現在地)
+### フェーズ1:ドメイン基盤・ナビゲーション ✅(ほぼ完了)
 **ゴール**:アプリが起動し、ドメイン型とプランロジックがテストで固まっている。
 
-- [ ] ドメイン型の定義(`shared/types/receipt.ts` 等):Receipt / ReceiptMemo / OcrExtraction
-- [ ] 勘定科目マスタ(`constants/categories.ts`)
-- [ ] プラン判定ロジック(`features/billing/`):機能ゲート(FR-21)・枚数(FR-22)+ テスト
-- [ ] ナビ:4タブ(ホーム/レシート/出力/設定)の骨組み。各画面プレースホルダ
-- [ ] ローカルDB初期化(`lib/db/`:expo-sqlite スキーマ)
-- 検証:`npm test` / `npm run typecheck` / 起動確認
+- [x] ドメイン型の定義(`shared/types/receipt.ts`):Receipt / ReceiptMemo / OcrExtraction / NewReceipt
+- [x] 勘定科目マスタ(`constants/categories.ts`)+ `categoryName()` ヘルパー
+- [x] プラン判定ロジック(`features/billing/plan-access.ts`):機能ゲート(FR-21)・枚数(FR-22)+ テスト(6件)
+- [x] ローカルDB(`lib/db/`):SQLiteスキーマ + マイグレーション + Receiptリポジトリ(CRUD/当月集計)
+- [x] 汎用CSVフォーマッタ(`features/export/formatters/generic.ts`)を先行実装 + テスト(3件)。第5章 5.5.1 準拠(YYYY/MM/DD・CRLF)
+- [ ] ナビ:暫定2タブ(ホーム/レシート)で起動。4タブ化(出力/設定)はフェーズ後半 or 5/6 で
+- 検証:typecheck・lint クリーン / test 9件 PASS。実機起動は未確認(Dev Build 必要)
 
 ### フェーズ2:撮影 → 確認 → 保存(OCRはモック)
 **ゴール**:レシートを撮って、内容を確認・編集して、端末に保存できる(OCRはダミー応答)。
@@ -107,3 +108,6 @@
 実装の節目をここに追記する(何を・なぜ)。
 
 - 2026-05-26: ロードマップ作成。フェーズ1 着手。
+- 2026-05-26: フェーズ1 実装。ドメイン型/科目マスタ/プラン判定(+テスト)/SQLite基盤(スキーマ・マイグレーション・Receiptリポジトリ)/汎用CSV(先行)。typecheck・lint クリーン、test 9件 PASS。
+  - ナビは当面テンプレ由来の2タブ(ホーム/レシート)。4タブ化は出力/設定の画面が出来てから(過剰な先回り回避)。
+  - generic CSV はフェーズ5の範囲だが、第5章で仕様確定済みのため先行実装した。
