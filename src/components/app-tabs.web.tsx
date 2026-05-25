@@ -28,6 +28,12 @@ export default function AppTabs() {
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>レシート</TabButton>
           </TabTrigger>
+          <TabTrigger name="export" href="/export" asChild>
+            <TabButton>出力</TabButton>
+          </TabTrigger>
+          <TabTrigger name="settings" href="/settings" asChild>
+            <TabButton>設定</TabButton>
+          </TabTrigger>
         </CustomTabList>
       </TabList>
     </Tabs>

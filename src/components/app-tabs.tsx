@@ -14,9 +14,8 @@ export default function AppTabs() {
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
       {/*
-        MVP骨組みではテンプレの2タブ(ホーム/レシート)を流用。
-        設計の4タブ(ホーム/レシート/出力/設定)への拡張と専用アイコンは
-        実装フェーズで対応(docs/requirements/04-screen-design.md の 4.2)。
+        設計の4タブ(ホーム/レシート/出力/設定, 04-screen-design.md 4.2)。
+        出力/設定のアイコンは暫定で home/explore を流用。専用アイコンは仕上げ時に差し替え。
       */}
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>ホーム</NativeTabs.Trigger.Label>
@@ -28,6 +27,22 @@ export default function AppTabs() {
 
       <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Label>レシート</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={require('@/assets/images/tabIcons/explore.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="export">
+        <NativeTabs.Trigger.Label>出力</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={require('@/assets/images/tabIcons/home.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="settings">
+        <NativeTabs.Trigger.Label>設定</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"
