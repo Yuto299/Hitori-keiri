@@ -8,7 +8,7 @@
 
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -29,6 +29,7 @@ export function ExportScreen() {
   const [selected, setSelected] = useState<CsvFormatId>('generic');
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [exportedFileName, setExportedFileName] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -54,7 +55,9 @@ export function ExportScreen() {
       const formatter = ALL_FORMATTERS.find((f) => f.id === selected)!;
       const content = formatter.format(receipts);
       const year = new Date().getFullYear();
-      await shareCsv(formatter.fileName({ year }), content);
+      const fileName = formatter.fileName({ year });
+      await shareCsv(fileName, content);
+      setExportedFileName(fileName);
     } catch {
       Alert.alert('書き出しに失敗しました', 'もう一度お試しください。');
     } finally {
@@ -66,44 +69,75 @@ export function ExportScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="title" style={styles.title}>
-            CSVを書き出す
-          </ThemedText>
-          <ThemedText type="small" style={styles.note}>
-            対象: {count} 件 / 現在のプラン: {PLANS[plan].name}
-          </ThemedText>
+          {exportedFileName ? (
+            <View style={styles.doneView}>
+              <View style={styles.doneMark}>
+                <ThemedText style={styles.doneCheck}>✓</ThemedText>
+              </View>
+              <ThemedText style={styles.doneTitle}>書き出しが完了しました！</ThemedText>
+              <ThemedText type="small" style={styles.doneMeta}>
+                {ALL_FORMATTERS.find((f) => f.id === selected)?.label}
+              </ThemedText>
+              <ThemedText type="small" style={styles.doneMeta}>
+                {exportedFileName}
+              </ThemedText>
+              <View style={styles.doneActions}>
+                <Pressable style={styles.outlineButton} onPress={() => setExportedFileName(null)}>
+                  <ThemedText style={styles.outlineButtonText}>もう一度出力</ThemedText>
+                </Pressable>
+                <Pressable style={styles.doneButton} onPress={() => setExportedFileName(null)}>
+                  <ThemedText style={styles.doneButtonText}>完了</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <>
+              <ThemedText style={styles.title}>CSVを書き出す</ThemedText>
+              <ThemedText type="small" style={styles.note}>
+                対象: {count} 件 / 現在のプラン: {PLANS[plan].name}
+              </ThemedText>
 
-          <ThemedText type="small" style={styles.sectionLabel}>
-            出力形式を選択
-          </ThemedText>
-          {ALL_FORMATTERS.map((f) => {
-            const allowed = canUseFormat(plan, f.id);
-            const active = selected === f.id;
-            return (
+              <ThemedText type="small" style={styles.sectionLabel}>
+                出力形式を選択
+              </ThemedText>
+              <View style={styles.optionGroup}>
+                {ALL_FORMATTERS.map((f) => {
+                  const allowed = canUseFormat(plan, f.id);
+                  const active = selected === f.id;
+                  return (
+                    <Pressable
+                      key={f.id}
+                      onPress={() => setSelected(f.id)}
+                      style={[styles.option, active && styles.optionActive]}>
+                      <View style={[styles.radio, active && styles.radioActive]}>
+                        {active && <View style={styles.radioDot} />}
+                      </View>
+                      <ThemedText style={[styles.optionLabel, active && styles.optionTextActive]}>
+                        {f.label}
+                      </ThemedText>
+                      <ThemedText style={styles.formatBadge}>
+                        {f.id === 'generic' ? 'CSV' : f.id}
+                      </ThemedText>
+                      {!allowed && (
+                        <ThemedText type="small" style={styles.lock}>
+                          Light以上
+                        </ThemedText>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+
               <Pressable
-                key={f.id}
-                onPress={() => setSelected(f.id)}
-                style={[styles.option, active && styles.optionActive]}>
-                <ThemedText style={active ? styles.optionTextActive : undefined}>
-                  {f.label}
+                style={[styles.exportButton, busy && styles.disabled]}
+                disabled={busy}
+                onPress={handleExport}>
+                <ThemedText style={styles.exportButtonText}>
+                  {busy ? '書き出し中…' : 'CSVを書き出す'}
                 </ThemedText>
-                {!allowed && (
-                  <ThemedText type="small" style={styles.lock}>
-                    Light以上
-                  </ThemedText>
-                )}
               </Pressable>
-            );
-          })}
-
-          <Pressable
-            style={[styles.exportButton, busy && styles.disabled]}
-            disabled={busy}
-            onPress={handleExport}>
-            <ThemedText style={styles.exportButtonText}>
-              {busy ? '書き出し中…' : 'CSVを書き出す'}
-            </ThemedText>
-          </Pressable>
+            </>
+          )}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -111,33 +145,94 @@ export function ExportScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#FAFBFA' },
   safeArea: { flex: 1 },
-  content: { padding: Spacing.four, gap: Spacing.two },
-  title: { marginBottom: Spacing.one },
+  content: { flexGrow: 1, padding: Spacing.four, gap: Spacing.two },
+  title: { fontWeight: '800', marginBottom: Spacing.three, textAlign: 'center' },
   note: { opacity: 0.6, marginBottom: Spacing.three },
   sectionLabel: { opacity: 0.7, marginBottom: Spacing.one },
+  optionGroup: {
+    backgroundColor: '#ffffff',
+    borderColor: '#DDE4E0',
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: Spacing.two,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.two,
-    borderWidth: 1,
-    borderColor: '#EBEFEC',
+    borderBottomColor: '#EDF1EE',
+    borderBottomWidth: 1,
     backgroundColor: '#ffffff',
   },
-  optionActive: { borderColor: Brand.primary, backgroundColor: Brand.primaryLight },
+  optionActive: { backgroundColor: '#FBFEFC' },
+  radio: {
+    alignItems: 'center',
+    borderColor: '#B7C2BC',
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 16,
+    justifyContent: 'center',
+    width: 16,
+  },
+  radioActive: { borderColor: Brand.primary },
+  radioDot: { backgroundColor: Brand.primary, borderRadius: 4, height: 8, width: 8 },
+  optionLabel: { flex: 1 },
   optionTextActive: { color: Brand.primaryDark, fontWeight: '600' },
+  formatBadge: { color: '#4971A9', fontSize: 13, fontWeight: '800' },
   lock: { color: '#A98600' },
   exportButton: {
     backgroundColor: Brand.primary,
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Spacing.two,
     alignItems: 'center',
     marginTop: Spacing.three,
   },
   exportButtonText: { color: '#ffffff', fontWeight: '600' },
   disabled: { opacity: 0.5 },
+  doneView: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.six,
+  },
+  doneMark: {
+    alignItems: 'center',
+    backgroundColor: Brand.primary,
+    borderRadius: 36,
+    height: 72,
+    justifyContent: 'center',
+    marginBottom: Spacing.three,
+    width: 72,
+  },
+  doneCheck: { color: '#ffffff', fontSize: 42, fontWeight: '800' },
+  doneTitle: { fontSize: 18, fontWeight: '800', marginBottom: Spacing.three },
+  doneMeta: { color: '#66736C' },
+  doneActions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    marginTop: Spacing.five,
+    width: '100%',
+  },
+  outlineButton: {
+    alignItems: 'center',
+    borderColor: Brand.primary,
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    flex: 1,
+    paddingVertical: Spacing.two,
+  },
+  outlineButtonText: { color: Brand.primary, fontWeight: '700' },
+  doneButton: {
+    alignItems: 'center',
+    backgroundColor: Brand.primary,
+    borderRadius: Spacing.two,
+    flex: 1,
+    paddingVertical: Spacing.two,
+  },
+  doneButtonText: { color: '#ffffff', fontWeight: '700' },
 });

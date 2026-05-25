@@ -94,26 +94,45 @@ export function ReviewScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="title" style={styles.title}>
-            内容を確認
-          </ThemedText>
+        <View style={styles.nav}>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <ThemedText style={styles.backText}>‹</ThemedText>
+          </Pressable>
+          <ThemedText style={styles.navTitle}>内容を確認</ThemedText>
+          <Pressable disabled={saving} onPress={handleSave}>
+            <ThemedText style={[styles.saveLink, saving && styles.disabledText]}>
+              {saving ? '保存中' : '保存'}
+            </ThemedText>
+          </Pressable>
+        </View>
 
-          <Field label="日付(YYYY-MM-DD)">
-            <TextInput style={styles.input} value={date} onChangeText={setDate} placeholder="2026-05-26" />
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Field label="日付">
+            <View style={styles.inputWrap}>
+              <ThemedText style={styles.inputPrefix}>□</ThemedText>
+              <TextInput
+                style={styles.inputInWrap}
+                value={date}
+                onChangeText={setDate}
+                placeholder="2026/05/25"
+              />
+            </View>
           </Field>
 
-          <Field label={`金額${lowAmount ? ' ⚠ 要確認' : ''}`}>
-            <TextInput
-              style={[styles.input, lowAmount && styles.warnInput]}
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="number-pad"
-              placeholder="1280"
-            />
+          <Field label={`金額${lowAmount ? '（要確認）' : ''}`}>
+            <View style={[styles.inputWrap, lowAmount && styles.warnInput]}>
+              <ThemedText style={styles.inputPrefix}>¥</ThemedText>
+              <TextInput
+                style={styles.inputInWrap}
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="number-pad"
+                placeholder="1280"
+              />
+            </View>
           </Field>
 
-          <Field label={`店名${lowStore ? ' ⚠ 要確認' : ''}`}>
+          <Field label={`店名${lowStore ? '（要確認）' : ''}`}>
             <TextInput
               style={[styles.input, lowStore && styles.warnInput]}
               value={store}
@@ -122,16 +141,17 @@ export function ReviewScreen() {
             />
           </Field>
 
-          <Field label="勘定科目">
-            <View style={styles.categoryWrap}>
-              {CATEGORIES.map((c) => (
+          <Field label="カテゴリ（勘定科目） ？">
+            <View style={styles.categoryList}>
+              {CATEGORIES.slice(0, 6).map((c) => (
                 <Pressable
                   key={c.id}
                   onPress={() => setCategory(c.id)}
-                  style={[styles.chip, category === c.id && styles.chipActive]}>
-                  <ThemedText
-                    type="small"
-                    style={category === c.id ? styles.chipTextActive : undefined}>
+                  style={[styles.categoryOption, category === c.id && styles.categoryOptionActive]}>
+                  <View style={[styles.radio, category === c.id && styles.radioActive]}>
+                    {category === c.id && <View style={styles.radioDot} />}
+                  </View>
+                  <ThemedText style={category === c.id ? styles.categoryTextActive : undefined}>
                     {c.name}
                   </ThemedText>
                 </Pressable>
@@ -141,7 +161,7 @@ export function ReviewScreen() {
 
           <Field label="メモ(任意)">
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.memoInput]}
               value={note}
               onChangeText={setNote}
               placeholder="例: 打合せのお茶代"
@@ -174,37 +194,87 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#FAFBFA' },
   safeArea: { flex: 1 },
-  content: { padding: Spacing.four, gap: Spacing.three },
-  title: { marginBottom: Spacing.two },
-  field: { gap: Spacing.one },
-  fieldLabel: { opacity: 0.7 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D6DED9',
+  nav: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  backButton: {
+    alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  backText: { fontSize: 32, lineHeight: 34 },
+  navTitle: { fontWeight: '800' },
+  saveLink: { color: Brand.primary, fontWeight: '800' },
+  disabledText: { opacity: 0.5 },
+  content: { padding: Spacing.three, paddingBottom: Spacing.six, gap: Spacing.three },
+  field: { gap: Spacing.two },
+  fieldLabel: { color: '#4D5A53', fontWeight: '700' },
+  inputWrap: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: '#DDE4E0',
     borderRadius: Spacing.two,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+  },
+  inputPrefix: { color: '#11181C', fontWeight: '700' },
+  input: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#DDE4E0',
+    borderRadius: Spacing.two,
+    color: '#11181C',
+    flex: 1,
+    fontSize: 16,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
-    fontSize: 16,
+  },
+  inputInWrap: {
     color: '#11181C',
-    backgroundColor: '#ffffff',
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: Spacing.two,
   },
   warnInput: { borderColor: '#E0A100', backgroundColor: '#FFFBEF' },
-  categoryWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  chip: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+  memoInput: { minHeight: 46 },
+  categoryList: { gap: Spacing.two },
+  categoryOption: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: '#DDE4E0',
+    borderRadius: Spacing.two,
     borderWidth: 1,
-    borderColor: '#D6DED9',
+    flexDirection: 'row',
+    gap: Spacing.two,
+    minHeight: 42,
+    paddingHorizontal: Spacing.two,
   },
-  chipActive: { backgroundColor: Brand.primaryLight, borderColor: Brand.primary },
-  chipTextActive: { color: Brand.primaryDark },
+  categoryOptionActive: { borderColor: '#B8E6CA' },
+  radio: {
+    alignItems: 'center',
+    borderColor: '#B7C2BC',
+    borderRadius: 9,
+    borderWidth: 1,
+    height: 18,
+    justifyContent: 'center',
+    width: 18,
+  },
+  radioActive: { backgroundColor: Brand.primary, borderColor: Brand.primary },
+  radioDot: { backgroundColor: '#ffffff', borderRadius: 4, height: 8, width: 8 },
+  categoryTextActive: { color: '#1F7A4C', fontWeight: '800' },
   saveButton: {
     backgroundColor: Brand.primary,
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Spacing.two,
     alignItems: 'center',
     marginTop: Spacing.two,
   },
