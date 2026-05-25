@@ -41,14 +41,16 @@
 - [ ] ナビ:暫定2タブ(ホーム/レシート)で起動。4タブ化(出力/設定)はフェーズ後半 or 5/6 で
 - 検証:typecheck・lint クリーン / test 9件 PASS。実機起動は未確認(Dev Build 必要)
 
-### フェーズ2:撮影 → 確認 → 保存(OCRはモック)
+### フェーズ2:撮影 → 確認 → 保存(OCRはモック)✅(コアフロー実装済み)
 **ゴール**:レシートを撮って、内容を確認・編集して、端末に保存できる(OCRはダミー応答)。
 
-- [ ] カメラ(`features/capture/`):撮影(FR-01)・画像取込(FR-02)・連続撮影(FR-03)
-- [ ] OCR サービスの抽象インターフェース + **モック実装**(後でClaudeに差し替え)
-- [ ] 確認画面(`features/receipt-review/`):承認(FR-07)・修正(FR-08)・メモ(FR-09)
-- [ ] レシート一覧・詳細(`features/receipts/`):閲覧(FR-11)・編集削除(FR-14)
-- 検証:撮る→確認→保存→一覧表示 のコアフローが手で通る
+- [x] OCR サービスの抽象インターフェース + **モック実装**(`features/capture/api/`。後でClaudeに差し替え)
+- [x] 撮影/取込(`features/capture/`):image-picker でカメラ撮影(FR-01)・画像取込(FR-02)。Web対応。Free画像削除バナー(FR-26)
+- [x] 確認画面(`features/receipt-review/`):承認(FR-07)・修正(FR-08)・メモ(FR-09)・低確度ハイライト・枚数上限チェック(FR-22)
+- [x] 一覧(`features/receipts/`、S-04 FR-11)・詳細(S-05 FR-12表示/FR-14削除)
+- [x] AppProvider(プラン/ユーザー)+ React Query で一覧取得
+- 検証:typecheck・lint クリーン / test 9件 PASS。Web/実機での手動フロー確認はこの後
+- 残:連続撮影(FR-03)・編集(再利用)はフェーズ後半。expo-camera のリッチUIも後半で差し替え
 
 ### フェーズ3:Supabase 連携(認証・同期)
 **ゴール**:ログインでき、データがサーバに同期され、機種変更で復元できる。
@@ -111,3 +113,5 @@
 - 2026-05-26: フェーズ1 実装。ドメイン型/科目マスタ/プラン判定(+テスト)/SQLite基盤(スキーマ・マイグレーション・Receiptリポジトリ)/汎用CSV(先行)。typecheck・lint クリーン、test 9件 PASS。
   - ナビは当面テンプレ由来の2タブ(ホーム/レシート)。4タブ化は出力/設定の画面が出来てから(過剰な先回り回避)。
   - generic CSV はフェーズ5の範囲だが、第5章で仕様確定済みのため先行実装した。
+- 2026-05-26: フェーズ2 コアフロー実装。OCRモック → 撮影(image-picker/Web対応)→ 確認・編集(枚数上限チェック・Free画像非保存)→ 保存(SQLite)→ 一覧 → 詳細(画像削除済み表示・削除)。ルート: /capture, /review, /receipt/[id] を追加。AppProvider と QueryClient を _layout に組込。typecheck・lint クリーン。
+  - 撮影UIは image-picker ベース(Webでも動く簡潔版)。expo-camera のリッチUIは後半で差し替え予定。
