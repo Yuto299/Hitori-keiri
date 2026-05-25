@@ -1,8 +1,8 @@
 # ひとり経理(Hitori Keiri)要件定義書
 
-- バージョン: 0.5 (Draft)
+- バージョン: 0.6 (Draft)
 - 最終更新: 2026-05-25
-- ステータス: 第1章確定 / 第2章ドラフト / 第3章確定 / 第4章ドラフト着手
+- ステータス: 第1〜4章確定 / 第5章以降 未着手
 
 本要件定義書は章ごとにファイルを分割している。各章の最新ステータスは下表を参照。
 
@@ -13,7 +13,7 @@
 | 1 | プロダクト概要 | 確定 | [01-product-overview.md](./01-product-overview.md) |
 | 2 | ターゲットユーザー(ペルソナ) | ドラフト | [02-personas.md](./02-personas.md) |
 | 3 | 機能要件 / ユーザーストーリー | 確定 | [03-functional-requirements.md](./03-functional-requirements.md) |
-| 4 | 画面設計 / UXフロー | ドラフト | [04-screen-design.md](./04-screen-design.md) |
+| 4 | 画面設計 / UXフロー | 確定 | [04-screen-design.md](./04-screen-design.md) |
 | 5 | データモデル / CSV仕様 | 未着手 | (予定) |
 
 ## 章構成の方針
