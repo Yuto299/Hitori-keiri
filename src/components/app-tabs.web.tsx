@@ -22,21 +22,10 @@ export default function AppTabs() {
     pathname === '/explore' ||
     pathname === '/export' ||
     pathname === '/settings';
-  const isDarkScreen = pathname === '/capture';
 
   return (
     <Tabs style={styles.appShell}>
-      <View style={[styles.phoneFrame, isDarkScreen && styles.phoneFrameDark]}>
-        <View style={[styles.statusBar, isDarkScreen && styles.statusBarDark]}>
-          <ThemedText style={[styles.statusTime, isDarkScreen && styles.statusTextDark]}>
-            9:33
-          </ThemedText>
-          <View style={styles.statusIcons}>
-            <View style={[styles.signalIcon, isDarkScreen && styles.signalIconDark]} />
-            <View style={[styles.wifiIcon, isDarkScreen && styles.signalIconDark]} />
-            <View style={[styles.batteryIcon, isDarkScreen && styles.batteryIconDark]} />
-          </View>
-        </View>
+      <View style={styles.phoneFrame}>
         <TabSlot style={[styles.tabSlot, !tabsVisible && styles.tabSlotFull]} />
       </View>
       {tabsVisible && (
@@ -116,58 +105,6 @@ const styles = StyleSheet.create({
     shadowRadius: 42,
     overflow: 'hidden',
     width: '100%',
-  },
-  phoneFrameDark: {
-    backgroundColor: '#121512',
-  },
-  statusBar: {
-    alignItems: 'center',
-    backgroundColor: '#FAFBFA',
-    flexDirection: 'row',
-    height: 34,
-    justifyContent: 'space-between',
-    paddingHorizontal: 28,
-  },
-  statusBarDark: {
-    backgroundColor: '#121512',
-  },
-  statusTime: {
-    color: '#101615',
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 14,
-  },
-  statusIcons: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 5,
-  },
-  signalIcon: {
-    backgroundColor: '#101615',
-    borderRadius: 2,
-    height: 10,
-    width: 12,
-  },
-  wifiIcon: {
-    backgroundColor: '#101615',
-    borderRadius: 5,
-    height: 10,
-    width: 10,
-  },
-  batteryIcon: {
-    backgroundColor: '#101615',
-    borderRadius: 2,
-    height: 9,
-    width: 18,
-  },
-  signalIconDark: {
-    backgroundColor: '#ffffff',
-  },
-  batteryIconDark: {
-    backgroundColor: '#ffffff',
-  },
-  statusTextDark: {
-    color: '#ffffff',
   },
   tabSlot: {
     flex: 1,
