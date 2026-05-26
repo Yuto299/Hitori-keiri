@@ -26,7 +26,9 @@ export default function AppTabs() {
   return (
     <Tabs style={styles.appShell}>
       <View style={styles.phoneFrame}>
-        <TabSlot style={[styles.tabSlot, !tabsVisible && styles.tabSlotFull]} />
+        <View style={styles.previewSafeTop}>
+          <TabSlot style={[styles.tabSlot, !tabsVisible && styles.tabSlotFull]} />
+        </View>
       </View>
       {tabsVisible && (
         <TabList asChild>
@@ -112,6 +114,10 @@ const styles = StyleSheet.create({
   },
   tabSlotFull: {
     paddingBottom: 0,
+  },
+  previewSafeTop: {
+    flex: 1,
+    paddingTop: 28,
   },
   tabListContainer: {
     position: 'absolute',

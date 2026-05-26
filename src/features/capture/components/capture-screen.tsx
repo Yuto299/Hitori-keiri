@@ -157,8 +157,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingBottom: Spacing.two,
-    paddingTop: Spacing.two,
+    paddingBottom: Spacing.three,
+    paddingTop: 0,
   },
   closeButton: {
     alignItems: 'center',
