@@ -6,117 +6,143 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { SymbolView } from 'expo-symbols';
+import { usePathname } from 'expo-router';
 import React from 'react';
-import { Pressable, useColorScheme, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
 
-import { ExternalLink } from './external-link';
 import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
 
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
+  const pathname = usePathname();
+  const tabsVisible =
+    pathname === '/' ||
+    pathname === '/explore' ||
+    pathname === '/export' ||
+    pathname === '/settings';
+
   return (
-    <Tabs>
-      <TabSlot style={{ height: '100%' }} />
-      <TabList asChild>
-        <CustomTabList>
-          <TabTrigger name="home" href="/" asChild>
-            <TabButton>ホーム</TabButton>
-          </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>レシート</TabButton>
-          </TabTrigger>
-          <TabTrigger name="export" href="/export" asChild>
-            <TabButton>出力</TabButton>
-          </TabTrigger>
-          <TabTrigger name="settings" href="/settings" asChild>
-            <TabButton>設定</TabButton>
-          </TabTrigger>
-        </CustomTabList>
-      </TabList>
+    <Tabs style={styles.appShell}>
+      <View style={styles.phoneFrame}>
+        <TabSlot style={[styles.tabSlot, !tabsVisible && styles.tabSlotFull]} />
+      </View>
+      {tabsVisible && (
+        <TabList asChild>
+          <CustomTabList>
+            <TabTrigger name="home" href="/" asChild>
+              <TabButton icon="⌂">ホーム</TabButton>
+            </TabTrigger>
+            <TabTrigger name="explore" href="/explore" asChild>
+              <TabButton icon="▤">レシート</TabButton>
+            </TabTrigger>
+            <TabTrigger name="export" href="/export" asChild>
+              <TabButton icon="⇩">出力</TabButton>
+            </TabTrigger>
+            <TabTrigger name="settings" href="/settings" asChild>
+              <TabButton icon="⚙">設定</TabButton>
+            </TabTrigger>
+          </CustomTabList>
+        </TabList>
+      )}
     </Tabs>
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+export function TabButton({
+  children,
+  icon,
+  isFocused,
+  ...props
+}: TabTriggerSlotProps & { icon: string }) {
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
-          {children}
-        </ThemedText>
-      </ThemedView>
+    <Pressable
+      {...props}
+      style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
+      <ThemedText style={[styles.tabIcon, isFocused && styles.tabActive]}>{icon}</ThemedText>
+      <ThemedText type="small" style={[styles.tabLabel, isFocused && styles.tabActive]}>
+        {children}
+      </ThemedText>
     </Pressable>
   );
 }
 
 export function CustomTabList(props: TabListProps) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          ひとり経理
-        </ThemedText>
-
+      <View style={styles.innerContainer}>
         {props.children}
-
-        <ExternalLink href="https://docs.expo.dev" asChild>
-          <Pressable style={styles.externalPressable}>
-            <ThemedText type="link">Docs</ThemedText>
-            <SymbolView
-              tintColor={colors.text}
-              name={{ ios: 'arrow.up.right.square', web: 'link' }}
-              size={12}
-            />
-          </Pressable>
-        </ExternalLink>
-      </ThemedView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  appShell: {
+    alignItems: 'center',
+    backgroundColor: '#F3F5F3',
+    flex: 1,
+    minHeight: '100%',
+    width: '100%',
+  },
+  phoneFrame: {
+    backgroundColor: '#FAFBFA',
+    flex: 1,
+    maxWidth: 390,
+    minHeight: 720,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  tabSlot: {
+    height: '100%',
+    paddingBottom: 72,
+  },
+  tabSlotFull: {
+    paddingBottom: 0,
+  },
   tabListContainer: {
     position: 'absolute',
-    width: '100%',
-    padding: Spacing.three,
+    bottom: 0,
+    left: 0,
+    right: 0,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
   },
   innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
+    backgroundColor: '#ffffff',
+    borderTopColor: '#E5EAE7',
+    borderTopWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    flexGrow: 1,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-  },
-  brandText: {
-    marginRight: 'auto',
+    height: 72,
+    justifyContent: 'space-around',
+    maxWidth: 390,
+    paddingHorizontal: Spacing.two,
+    width: '100%',
   },
   pressed: {
     opacity: 0.7,
   },
-  tabButtonView: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-  },
-  externalPressable: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  tabButton: {
     alignItems: 'center',
-    gap: Spacing.one,
-    marginLeft: Spacing.three,
+    flex: 1,
+    gap: 2,
+    justifyContent: 'center',
+  },
+  tabIcon: {
+    color: '#7B8580',
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
+  tabLabel: {
+    color: '#7B8580',
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 15,
+  },
+  tabActive: {
+    color: Brand.primary,
   },
 });

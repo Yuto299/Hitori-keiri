@@ -44,7 +44,7 @@ export default function HomeScreen() {
               <ThemedText type="small" style={styles.screenLabel}>
                 ホーム
               </ThemedText>
-              <ThemedText type="subtitle" style={styles.greeting}>
+              <ThemedText style={styles.greeting}>
                 こんにちは、ゆうとさん
               </ThemedText>
             </View>
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   screenLabel: { color: '#11181C', fontWeight: '700' },
-  greeting: { marginTop: Spacing.three, fontWeight: '700' },
+  greeting: { fontSize: 17, fontWeight: '800', lineHeight: 24, marginTop: Spacing.three },
   iconButton: {
     alignItems: 'center',
     borderColor: '#E3E8E4',
