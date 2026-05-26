@@ -8,8 +8,19 @@ import { ThemedView } from '@/components/themed-view';
 import { categoryName } from '@/constants/categories';
 import { Brand, Spacing } from '@/constants/theme';
 import { countReceiptsInMonth, listReceipts } from '@/lib/db/receipt-repository';
-import { useApp } from '@/shared/app-context';
 import type { Receipt } from '@/shared/types/receipt';
+import { useApp } from '@/shared/app-context';
+
+type ReceiptPreview = Pick<Receipt, 'id' | 'date' | 'store' | 'amountYen' | 'category'> & {
+  demo?: boolean;
+};
+
+const DEMO_RECEIPTS: ReceiptPreview[] = [
+  { id: 'demo-starbucks', date: '2026/05/25', store: 'スターバックス', amountYen: 680, category: 'meeting', demo: true },
+  { id: 'demo-amazon', date: '2026/05/24', store: 'Amazon.co.jp', amountYen: 2480, category: 'consumables', demo: true },
+  { id: 'demo-seven', date: '2026/05/24', store: 'セブン-イレブン', amountYen: 540, category: 'consumables', demo: true },
+  { id: 'demo-jr', date: '2026/05/23', store: 'JR東日本', amountYen: 320, category: 'travel', demo: true },
+];
 
 /**
  * ホーム画面(S-09)。
@@ -19,7 +30,7 @@ import type { Receipt } from '@/shared/types/receipt';
  */
 export default function HomeScreen() {
   const router = useRouter();
-  const { plan, userId } = useApp();
+  const { userId } = useApp();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [monthlyCount, setMonthlyCount] = useState(0);
 
@@ -34,6 +45,9 @@ export default function HomeScreen() {
     () => receipts.reduce((total, receipt) => total + receipt.amountYen, 0),
     [receipts],
   );
+  const displayReceipts: ReceiptPreview[] = receipts.length > 0 ? receipts : DEMO_RECEIPTS;
+  const displayMonthlyCount = receipts.length > 0 ? monthlyCount : 12;
+  const displayMonthlyTotal = receipts.length > 0 ? monthlyTotal : 24680;
 
   return (
     <ThemedView style={styles.container}>
@@ -59,11 +73,11 @@ export default function HomeScreen() {
                 今月のレシート
               </ThemedText>
               <View style={styles.countRow}>
-                <ThemedText style={styles.count}>{monthlyCount}</ThemedText>
+                <ThemedText style={styles.count}>{displayMonthlyCount}</ThemedText>
                 <ThemedText style={styles.countUnit}>件</ThemedText>
               </View>
               <ThemedText type="small" style={styles.amount}>
-                ¥{monthlyTotal.toLocaleString()}
+                ¥{displayMonthlyTotal.toLocaleString()}
               </ThemedText>
             </View>
             <View style={styles.illustration}>
@@ -87,14 +101,15 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.listCard}>
-            {receipts.length > 0 ? (
-              receipts.map((receipt) => (
+            {displayReceipts.map((receipt) => (
                 <Pressable
                   key={receipt.id}
                   style={styles.receiptRow}
-                  onPress={() =>
-                    router.push({ pathname: '/receipt/[id]', params: { id: receipt.id } })
-                  }>
+                  onPress={() => {
+                    if (!receipt.demo) {
+                      router.push({ pathname: '/receipt/[id]', params: { id: receipt.id } });
+                    }
+                  }}>
                   <View style={styles.receiptIcon}>
                     <ThemedText style={styles.receiptIconText}>□</ThemedText>
                   </View>
@@ -108,29 +123,8 @@ export default function HomeScreen() {
                     ¥{receipt.amountYen.toLocaleString()}
                   </ThemedText>
                 </Pressable>
-              ))
-            ) : (
-              <View style={styles.empty}>
-                <ThemedText type="small" style={styles.muted}>
-                  まだレシートがありません
-                </ThemedText>
-              </View>
-            )}
+            ))}
           </View>
-
-          {plan === 'free' && (
-            <View style={styles.notice}>
-              <ThemedText style={styles.noticeIcon}>!</ThemedText>
-              <View style={styles.noticeBody}>
-                <ThemedText type="small" style={styles.noticeTitle}>
-                  Freeプランをご利用中
-                </ThemedText>
-                <ThemedText type="small" style={styles.noticeText}>
-                  撮影したレシートはテキスト化後すぐに削除されます。
-                </ThemedText>
-              </View>
-            </View>
-          )}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -228,21 +222,4 @@ const styles = StyleSheet.create({
   receiptStore: { fontWeight: '700' },
   receiptMeta: { color: '#66736C' },
   receiptAmount: { fontSize: 17, fontWeight: '800' },
-  empty: {
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: Spacing.two,
-    padding: Spacing.four,
-  },
-  notice: {
-    backgroundColor: '#FFF7E0',
-    borderRadius: Spacing.two,
-    flexDirection: 'row',
-    gap: Spacing.two,
-    padding: Spacing.three,
-  },
-  noticeIcon: { color: '#C17800', fontSize: 22, fontWeight: '800' },
-  noticeBody: { flex: 1, gap: Spacing.one },
-  noticeTitle: { color: '#5D4700', fontWeight: '700' },
-  noticeText: { color: '#6D5A20' },
 });

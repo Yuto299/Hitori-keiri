@@ -23,7 +23,7 @@ const AppContext = createContext<AppState | null>(null);
 const LOCAL_USER_ID = 'local-user';
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [plan, setPlan] = useState<PlanId>('free');
+  const [plan, setPlan] = useState<PlanId>('light');
 
   const value = useMemo<AppState>(
     () => ({ userId: LOCAL_USER_ID, plan, setPlan }),

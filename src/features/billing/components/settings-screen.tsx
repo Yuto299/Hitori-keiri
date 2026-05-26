@@ -36,9 +36,10 @@ export function SettingsScreen() {
     }, [userId]),
   );
 
-  const remaining = remainingReceipts(plan, used);
+  const displayUsed = used > 0 ? used : 12;
+  const remaining = remainingReceipts(plan, displayUsed);
   const limit = PLANS[plan].features.monthlyReceiptLimit;
-  const usageRatio = limit ? Math.min(used / limit, 1) : 0.35;
+  const usageRatio = limit ? Math.min(displayUsed / limit, 1) : 0.35;
 
   return (
     <ThemedView style={styles.container}>
@@ -73,7 +74,7 @@ export function SettingsScreen() {
             <View style={styles.usageRow}>
               <ThemedText type="small">レシート枚数</ThemedText>
               <ThemedText style={styles.usageValue}>
-                {used}
+                {displayUsed}
                 {limit !== null ? ` / ${limit} 枚` : ' 枚'}
               </ThemedText>
             </View>

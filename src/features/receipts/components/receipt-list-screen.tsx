@@ -16,6 +16,17 @@ import { categoryName } from '@/constants/categories';
 import { Brand, Spacing } from '@/constants/theme';
 import { useReceipts } from '@/features/receipts/hooks/use-receipts';
 import { useApp } from '@/shared/app-context';
+import type { Receipt } from '@/shared/types/receipt';
+
+type ReceiptPreview = Pick<Receipt, 'id' | 'date' | 'store' | 'amountYen' | 'category'> & {
+  demo?: boolean;
+};
+
+const DEMO_RECEIPTS: ReceiptPreview[] = [
+  { id: 'demo-familymart', date: '2026/05/25', store: 'ファミリーマート', amountYen: 280, category: 'consumables', demo: true },
+  { id: 'demo-starbucks', date: '2026/05/24', store: 'スターバックス', amountYen: 680, category: 'meeting', demo: true },
+  { id: 'demo-amazon', date: '2026/05/24', store: 'Amazon.co.jp', amountYen: 2480, category: 'consumables', demo: true },
+];
 
 export function ReceiptListScreen() {
   const router = useRouter();
@@ -33,7 +44,8 @@ export function ReceiptListScreen() {
 
   const filteredReceipts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return receipts.filter((receipt) => {
+    const source: ReceiptPreview[] = receipts.length > 0 ? receipts : DEMO_RECEIPTS;
+    return source.filter((receipt) => {
       if (filter !== 'all') return false;
       if (!normalized) return true;
       return `${receipt.date} ${receipt.store} ${receipt.amountYen}`.toLowerCase().includes(normalized);
@@ -95,7 +107,11 @@ export function ReceiptListScreen() {
             renderItem={({ item }) => (
               <Pressable
                 style={styles.row}
-                onPress={() => router.push({ pathname: '/receipt/[id]', params: { id: item.id } })}>
+                onPress={() => {
+                  if (!item.demo) {
+                    router.push({ pathname: '/receipt/[id]', params: { id: item.id } });
+                  }
+                }}>
                 <View style={styles.rowIcon}>
                   <ThemedText style={styles.rowIconText}>□</ThemedText>
                 </View>

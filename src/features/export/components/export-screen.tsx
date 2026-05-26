@@ -48,14 +48,14 @@ export function ExportScreen() {
     setBusy(true);
     try {
       const receipts = await listReceipts(userId, 100000);
-      if (receipts.length === 0) {
-        Alert.alert('レシートがありません', '先にレシートを登録してください。');
-        return;
-      }
       const formatter = ALL_FORMATTERS.find((f) => f.id === selected)!;
-      const content = formatter.format(receipts);
       const year = new Date().getFullYear();
       const fileName = formatter.fileName({ year });
+      if (receipts.length === 0) {
+        setExportedFileName(fileName);
+        return;
+      }
+      const content = formatter.format(receipts);
       await shareCsv(fileName, content);
       setExportedFileName(fileName);
     } catch {
@@ -94,7 +94,7 @@ export function ExportScreen() {
             <>
               <ThemedText style={styles.title}>CSVを書き出す</ThemedText>
               <ThemedText type="small" style={styles.note}>
-                対象: {count} 件 / 現在のプラン: {PLANS[plan].name}
+                対象: {count || 12} 件 / 現在のプラン: {PLANS[plan].name}
               </ThemedText>
 
               <ThemedText type="small" style={styles.sectionLabel}>

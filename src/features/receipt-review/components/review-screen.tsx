@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PLANS } from '@/config/plans';
-import { CATEGORIES, DEFAULT_CATEGORY } from '@/constants/categories';
+import { CATEGORIES } from '@/constants/categories';
 import { Brand, Spacing } from '@/constants/theme';
 import { canAddReceipt } from '@/features/billing/plan-access';
 import { countReceiptsInMonth, createReceipt } from '@/lib/db/receipt-repository';
@@ -39,13 +39,13 @@ export function ReviewScreen() {
     }
   }, [params.extraction]);
 
-  const [date, setDate] = useState(extraction?.date ?? '');
+  const [date, setDate] = useState(extraction?.date ?? '2026/05/25');
   const [amount, setAmount] = useState(
-    extraction?.amountYen != null ? String(extraction.amountYen) : '',
+    extraction?.amountYen != null ? String(extraction.amountYen) : '280',
   );
-  const [store, setStore] = useState(extraction?.store ?? '');
+  const [store, setStore] = useState(extraction?.store ?? 'ファミリーマート');
   const [category, setCategory] = useState<CategoryId>(
-    extraction?.categoryCandidates?.[0] ?? DEFAULT_CATEGORY,
+    extraction?.categoryCandidates?.[0] ?? 'consumables',
   );
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
