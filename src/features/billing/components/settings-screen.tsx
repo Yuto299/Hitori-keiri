@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppIcon } from '@/components/app-icon';
 import { PLANS, type PlanId } from '@/config/plans';
 import { Brand, Spacing } from '@/constants/theme';
 import { remainingReceipts } from '@/features/billing/plan-access';
@@ -72,7 +73,10 @@ export function SettingsScreen() {
               今月の利用状況
             </ThemedText>
             <View style={styles.usageRow}>
-              <ThemedText type="small">レシート枚数</ThemedText>
+              <View style={styles.usageLabel}>
+                <AppIcon color="#66736C" name="receipt" size={17} />
+                <ThemedText type="small">レシート枚数</ThemedText>
+              </View>
               <ThemedText style={styles.usageValue}>
                 {displayUsed}
                 {limit !== null ? ` / ${limit} 枚` : ' 枚'}
@@ -82,7 +86,10 @@ export function SettingsScreen() {
               <View style={[styles.progressBar, { width: `${usageRatio * 100}%` }]} />
             </View>
             <View style={styles.usageRow}>
-              <ThemedText type="small">画像の保存期間</ThemedText>
+              <View style={styles.usageLabel}>
+                <AppIcon color="#66736C" name="gallery" size={17} />
+                <ThemedText type="small">画像の保存期間</ThemedText>
+              </View>
               <ThemedText type="small" style={styles.usageLink}>
                 {plan === 'free' ? '保存なし' : plan === 'light' ? 'あと18日 〉' : '無期限'}
               </ThemedText>
@@ -161,6 +168,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  usageLabel: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.one,
   },
   usageValue: { fontWeight: '800' },
   progressTrack: {

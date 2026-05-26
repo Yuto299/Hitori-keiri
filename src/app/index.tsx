@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppIcon } from '@/components/app-icon';
 import { categoryName } from '@/constants/categories';
 import { Brand, Spacing } from '@/constants/theme';
 import { countReceiptsInMonth, listReceipts } from '@/lib/db/receipt-repository';
@@ -63,7 +64,7 @@ export default function HomeScreen() {
               </ThemedText>
             </View>
             <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
-              <ThemedText style={styles.iconButtonText}>⚙</ThemedText>
+              <AppIcon color="#14201A" name="settings" size={19} />
             </Pressable>
           </View>
 
@@ -81,48 +82,51 @@ export default function HomeScreen() {
               </ThemedText>
             </View>
             <View style={styles.illustration}>
-              <ThemedText style={styles.illustrationPhone}>▯</ThemedText>
-              <ThemedText style={styles.illustrationFace}>◡</ThemedText>
+              <View style={styles.avatar}>
+                <View style={styles.avatarHead} />
+                <View style={styles.avatarBody} />
+              </View>
+              <View style={styles.phoneBadge}>
+                <AppIcon color="#14201A" name="receipt" size={16} />
+              </View>
             </View>
           </View>
 
           <Pressable style={styles.primaryButton} onPress={() => router.push('/capture')}>
-            <ThemedText style={styles.cameraIcon}>▣</ThemedText>
+            <AppIcon color="#ffffff" name="camera" size={22} />
             <ThemedText style={styles.primaryButtonText}>レシートを撮る</ThemedText>
           </Pressable>
 
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>最近のレシート</ThemedText>
             <Pressable onPress={() => router.push('/explore')}>
-              <ThemedText type="small" style={styles.linkText}>
-                すべて見る 〉
-              </ThemedText>
+              <ThemedText type="small" style={styles.linkText}>すべて見る</ThemedText>
             </Pressable>
           </View>
 
           <View style={styles.listCard}>
             {displayReceipts.map((receipt) => (
-                <Pressable
-                  key={receipt.id}
-                  style={styles.receiptRow}
-                  onPress={() => {
-                    if (!receipt.demo) {
-                      router.push({ pathname: '/receipt/[id]', params: { id: receipt.id } });
-                    }
-                  }}>
-                  <View style={styles.receiptIcon}>
-                    <ThemedText style={styles.receiptIconText}>□</ThemedText>
-                  </View>
-                  <View style={styles.receiptMain}>
-                    <ThemedText style={styles.receiptStore}>{receipt.store}</ThemedText>
-                    <ThemedText type="small" style={styles.receiptMeta}>
-                      {receipt.date} ・ {categoryName(receipt.category)}
-                    </ThemedText>
-                  </View>
-                  <ThemedText style={styles.receiptAmount}>
-                    ¥{receipt.amountYen.toLocaleString()}
+              <Pressable
+                key={receipt.id}
+                style={styles.receiptRow}
+                onPress={() => {
+                  if (!receipt.demo) {
+                    router.push({ pathname: '/receipt/[id]', params: { id: receipt.id } });
+                  }
+                }}>
+                <View style={styles.receiptIcon}>
+                  <AppIcon color="#14201A" name="receipt" size={19} />
+                </View>
+                <View style={styles.receiptMain}>
+                  <ThemedText style={styles.receiptStore}>{receipt.store}</ThemedText>
+                  <ThemedText type="small" style={styles.receiptMeta}>
+                    {receipt.date} ・ {categoryName(receipt.category)}
                   </ThemedText>
-                </Pressable>
+                </View>
+                <ThemedText style={styles.receiptAmount}>
+                  ¥{receipt.amountYen.toLocaleString()}
+                </ThemedText>
+              </Pressable>
             ))}
           </View>
         </ScrollView>
@@ -154,7 +158,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
-  iconButtonText: { fontSize: 18 },
   summary: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -173,8 +176,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 88,
   },
-  illustrationPhone: { color: '#11181C', fontSize: 30, lineHeight: 30 },
-  illustrationFace: { color: '#11181C', fontSize: 20, lineHeight: 20 },
+  avatar: { alignItems: 'center', justifyContent: 'center' },
+  avatarHead: {
+    backgroundColor: '#11181C',
+    borderRadius: 12,
+    height: 24,
+    width: 24,
+  },
+  avatarBody: {
+    backgroundColor: '#ffffff',
+    borderColor: '#11181C',
+    borderRadius: 16,
+    borderWidth: 2,
+    height: 32,
+    marginTop: -2,
+    width: 42,
+  },
+  phoneBadge: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: '#DDECE3',
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 28,
+    justifyContent: 'center',
+    position: 'absolute',
+    left: 12,
+    top: 28,
+    width: 22,
+  },
   primaryButton: {
     alignItems: 'center',
     backgroundColor: Brand.primary,
@@ -190,7 +220,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
   },
-  cameraIcon: { color: '#ffffff', fontSize: 18, fontWeight: '700' },
   primaryButtonText: { color: '#ffffff', fontWeight: '600' },
   sectionHeader: {
     alignItems: 'center',
@@ -217,7 +246,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
-  receiptIconText: { color: '#11181C' },
   receiptMain: { flex: 1, gap: 2 },
   receiptStore: { fontWeight: '700' },
   receiptMeta: { color: '#66736C' },

@@ -27,8 +27,26 @@
 
 ```bash
 npm install
-npm run web      # ブラウザで http://localhost:8081(動作確認の最短経路)
+npm run web
 ```
+
+`npm run web` は Expo の開発サーバを起動し、ブラウザを開く。URL はターミナルに表示されたものを使う。
+多くの場合は `http://localhost:8081` だが、ポートが埋まっている場合は別ポートになる。
+
+Chromeで開きたい場合:
+
+```bash
+BROWSER="Google Chrome" npm run web
+```
+
+うまく開かない場合:
+
+```bash
+npm start
+# 起動後、ターミナルで w を押して Web を開く
+```
+
+それでも `8081` が使用中と出る場合は、既存の Expo/Node プロセスを止めてから再実行する。
 
 iOS/Android 実機は Development Build が必要(SDK 55 は Expo Go 非対応)。
 

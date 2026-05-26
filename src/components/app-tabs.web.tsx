@@ -12,6 +12,7 @@ import { Pressable, View, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 
+import { AppIcon, type AppIconName } from '@/components/app-icon';
 import { Brand, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
@@ -31,15 +32,9 @@ export default function AppTabs() {
             9:33
           </ThemedText>
           <View style={styles.statusIcons}>
-            <ThemedText style={[styles.statusIcon, isDarkScreen && styles.statusTextDark]}>
-              ▰
-            </ThemedText>
-            <ThemedText style={[styles.statusIcon, isDarkScreen && styles.statusTextDark]}>
-              ◒
-            </ThemedText>
-            <ThemedText style={[styles.statusIcon, isDarkScreen && styles.statusTextDark]}>
-              ▬
-            </ThemedText>
+            <View style={[styles.signalIcon, isDarkScreen && styles.signalIconDark]} />
+            <View style={[styles.wifiIcon, isDarkScreen && styles.signalIconDark]} />
+            <View style={[styles.batteryIcon, isDarkScreen && styles.batteryIconDark]} />
           </View>
         </View>
         <TabSlot style={[styles.tabSlot, !tabsVisible && styles.tabSlotFull]} />
@@ -48,16 +43,16 @@ export default function AppTabs() {
         <TabList asChild>
           <CustomTabList>
             <TabTrigger name="home" href="/" asChild>
-              <TabButton icon="⌂">ホーム</TabButton>
+              <TabButton icon="home">ホーム</TabButton>
             </TabTrigger>
             <TabTrigger name="explore" href="/explore" asChild>
-              <TabButton icon="▤">レシート</TabButton>
+              <TabButton icon="receipt">レシート</TabButton>
             </TabTrigger>
             <TabTrigger name="export" href="/export" asChild>
-              <TabButton icon="⇩">出力</TabButton>
+              <TabButton icon="export">出力</TabButton>
             </TabTrigger>
             <TabTrigger name="settings" href="/settings" asChild>
-              <TabButton icon="⚙">設定</TabButton>
+              <TabButton icon="settings">設定</TabButton>
             </TabTrigger>
           </CustomTabList>
         </TabList>
@@ -71,12 +66,14 @@ export function TabButton({
   icon,
   isFocused,
   ...props
-}: TabTriggerSlotProps & { icon: string }) {
+}: TabTriggerSlotProps & { icon: AppIconName }) {
+  const color = isFocused ? Brand.primary : '#7B8580';
+
   return (
     <Pressable
       {...props}
       style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
-      <ThemedText style={[styles.tabIcon, isFocused && styles.tabActive]}>{icon}</ThemedText>
+      <AppIcon color={color} name={icon} size={23} />
       <ThemedText type="small" style={[styles.tabLabel, isFocused && styles.tabActive]}>
         {children}
       </ThemedText>
@@ -145,11 +142,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 5,
   },
-  statusIcon: {
-    color: '#101615',
-    fontSize: 9,
-    fontWeight: '800',
-    lineHeight: 10,
+  signalIcon: {
+    backgroundColor: '#101615',
+    borderRadius: 2,
+    height: 10,
+    width: 12,
+  },
+  wifiIcon: {
+    backgroundColor: '#101615',
+    borderRadius: 5,
+    height: 10,
+    width: 10,
+  },
+  batteryIcon: {
+    backgroundColor: '#101615',
+    borderRadius: 2,
+    height: 9,
+    width: 18,
+  },
+  signalIconDark: {
+    backgroundColor: '#ffffff',
+  },
+  batteryIconDark: {
+    backgroundColor: '#ffffff',
   },
   statusTextDark: {
     color: '#ffffff',
@@ -190,12 +205,6 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
     justifyContent: 'center',
-  },
-  tabIcon: {
-    color: '#7B8580',
-    fontSize: 22,
-    fontWeight: '700',
-    lineHeight: 24,
   },
   tabLabel: {
     color: '#7B8580',

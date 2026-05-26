@@ -9,11 +9,12 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppIcon } from '@/components/app-icon';
 import { Brand, Spacing } from '@/constants/theme';
 import { useReceiptScan } from '@/features/capture/hooks/use-receipt-scan';
 import { useApp } from '@/shared/app-context';
@@ -63,7 +64,7 @@ export function CaptureScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Pressable style={styles.closeButton} onPress={() => router.back()}>
-            <ThemedText style={styles.headerIcon}>×</ThemedText>
+            <AppIcon color="#ffffff" name="close" size={24} />
           </Pressable>
           <ThemedText style={styles.headerTitle}>レシートを撮影</ThemedText>
           <View style={styles.closeButton} />
@@ -114,7 +115,7 @@ export function CaptureScreen() {
             style={[styles.toolButton, loading && styles.disabled]}
             disabled={loading}
             onPress={() => handlePick(false)}>
-            <Image source={require('@/assets/images/icon.png')} style={styles.thumbnailIcon} />
+            <AppIcon color="#ffffff" name="gallery" size={22} />
           </Pressable>
 
           <Pressable
@@ -130,7 +131,7 @@ export function CaptureScreen() {
             style={[styles.toolButton, loading && styles.disabled]}
             disabled={loading}
             onPress={() => handlePick(false)}>
-            <ThemedText style={styles.toolButtonText}>□</ThemedText>
+            <AppIcon color="#ffffff" name="receipt" size={22} />
           </Pressable>
         </View>
       </SafeAreaView>
@@ -163,7 +164,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
-  headerIcon: { color: '#ffffff', fontSize: 28, lineHeight: 30 },
   headerTitle: { color: '#ffffff', fontWeight: '700' },
   viewfinder: {
     alignItems: 'center',
@@ -245,8 +245,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 44,
   },
-  toolButtonText: { color: '#ffffff', fontSize: 20 },
-  thumbnailIcon: { borderRadius: 4, height: 26, width: 26 },
   shutterOuter: {
     alignItems: 'center',
     borderColor: '#ffffff',

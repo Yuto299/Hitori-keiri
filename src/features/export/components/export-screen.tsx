@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppIcon } from '@/components/app-icon';
 import { PLANS } from '@/config/plans';
 import { Brand, Spacing } from '@/constants/theme';
 import {
@@ -72,7 +73,7 @@ export function ExportScreen() {
           {exportedFileName ? (
             <View style={styles.doneView}>
               <View style={styles.doneMark}>
-                <ThemedText style={styles.doneCheck}>✓</ThemedText>
+                <AppIcon color="#ffffff" name="check" size={46} />
               </View>
               <ThemedText style={styles.doneTitle}>書き出しが完了しました！</ThemedText>
               <ThemedText type="small" style={styles.doneMeta}>
@@ -209,7 +210,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
     width: 72,
   },
-  doneCheck: { color: '#ffffff', fontSize: 42, fontWeight: '800' },
   doneTitle: { fontSize: 18, fontWeight: '800', marginBottom: Spacing.three },
   doneMeta: { color: '#66736C' },
   doneActions: {

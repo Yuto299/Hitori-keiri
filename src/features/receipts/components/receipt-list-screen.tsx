@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppIcon } from '@/components/app-icon';
 import { categoryName } from '@/constants/categories';
 import { Brand, Spacing } from '@/constants/theme';
 import { useReceipts } from '@/features/receipts/hooks/use-receipts';
@@ -59,15 +60,13 @@ export function ReceiptListScreen() {
           <View style={styles.headerSpacer} />
           <ThemedText style={styles.title}>レシート一覧</ThemedText>
           <Pressable style={styles.iconButton}>
-            <ThemedText style={styles.iconText}>⚙</ThemedText>
+            <AppIcon color="#14201A" name="settings" size={19} />
           </Pressable>
         </View>
 
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
-            <ThemedText type="small" style={styles.searchIcon}>
-              ⌕
-            </ThemedText>
+            <AppIcon color="#6B7770" name="search" size={19} />
             <TextInput
               style={styles.searchInput}
               value={query}
@@ -76,7 +75,7 @@ export function ReceiptListScreen() {
             />
           </View>
           <Pressable style={styles.filterButton}>
-            <ThemedText style={styles.filterIcon}>≡</ThemedText>
+            <AppIcon color="#14201A" name="filter" size={20} />
           </Pressable>
         </View>
 
@@ -113,7 +112,7 @@ export function ReceiptListScreen() {
                   }
                 }}>
                 <View style={styles.rowIcon}>
-                  <ThemedText style={styles.rowIconText}>□</ThemedText>
+                  <AppIcon color="#14201A" name="receipt" size={19} />
                 </View>
                 <View style={styles.rowMain}>
                   <ThemedText style={styles.bold}>{item.store}</ThemedText>
@@ -169,7 +168,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
-  iconText: { fontSize: 18 },
   searchRow: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three },
   searchBox: {
     alignItems: 'center',
@@ -182,7 +180,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingHorizontal: Spacing.two,
   },
-  searchIcon: { color: '#6B7770', fontSize: 18 },
   searchInput: { color: '#11181C', flex: 1, fontSize: 14, paddingVertical: Spacing.two },
   filterButton: {
     alignItems: 'center',
@@ -194,7 +191,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 42,
   },
-  filterIcon: { color: '#11181C', fontSize: 18 },
   tabs: {
     borderBottomColor: '#DDE4E0',
     borderBottomWidth: 1,
@@ -225,7 +221,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 38,
   },
-  rowIconText: { color: '#11181C' },
   rowMain: { gap: 2, flexShrink: 1, paddingRight: Spacing.two },
   meta: { color: '#66736C' },
   bold: { fontWeight: '700' },

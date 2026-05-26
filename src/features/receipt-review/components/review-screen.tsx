@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppIcon } from '@/components/app-icon';
 import { PLANS } from '@/config/plans';
 import { CATEGORIES } from '@/constants/categories';
 import { Brand, Spacing } from '@/constants/theme';
@@ -96,7 +97,7 @@ export function ReviewScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.nav}>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <ThemedText style={styles.backText}>‹</ThemedText>
+            <AppIcon color="#11181C" name="back" size={24} />
           </Pressable>
           <ThemedText style={styles.navTitle}>内容を確認</ThemedText>
           <Pressable disabled={saving} onPress={handleSave}>
@@ -109,7 +110,7 @@ export function ReviewScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Field label="日付">
             <View style={styles.inputWrap}>
-              <ThemedText style={styles.inputPrefix}>□</ThemedText>
+              <AppIcon color="#4D5A53" name="calendar" size={19} />
               <TextInput
                 style={styles.inputInWrap}
                 value={date}
@@ -209,7 +210,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
-  backText: { fontSize: 32, lineHeight: 34 },
   navTitle: { fontWeight: '800' },
   saveLink: { color: Brand.primary, fontWeight: '800' },
   disabledText: { opacity: 0.5 },
