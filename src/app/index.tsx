@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { AppIcon } from '@/components/app-icon';
+import { AppIcon, HomeIllustration, ReceiptAvatar } from '@/components/app-icon';
 import { categoryName } from '@/constants/categories';
 import { Brand, Spacing } from '@/constants/theme';
 import { countReceiptsInMonth, listReceipts } from '@/lib/db/receipt-repository';
@@ -81,15 +81,7 @@ export default function HomeScreen() {
                 ¥{displayMonthlyTotal.toLocaleString()}
               </ThemedText>
             </View>
-            <View style={styles.illustration}>
-              <View style={styles.avatar}>
-                <View style={styles.avatarHead} />
-                <View style={styles.avatarBody} />
-              </View>
-              <View style={styles.phoneBadge}>
-                <AppIcon color="#14201A" name="receipt" size={16} />
-              </View>
-            </View>
+            <HomeIllustration size={92} />
           </View>
 
           <Pressable style={styles.primaryButton} onPress={() => router.push('/capture')}>
@@ -115,7 +107,7 @@ export default function HomeScreen() {
                   }
                 }}>
                 <View style={styles.receiptIcon}>
-                  <AppIcon color="#14201A" name="receipt" size={19} />
+                  <ReceiptAvatar accent={receiptAccent(receipt.store)} icon={receiptIcon(receipt.store)} />
                 </View>
                 <View style={styles.receiptMain}>
                   <ThemedText style={styles.receiptStore}>{receipt.store}</ThemedText>
@@ -133,6 +125,19 @@ export default function HomeScreen() {
       </SafeAreaView>
     </ThemedView>
   );
+}
+
+function receiptAccent(store: string) {
+  if (store.includes('スターバックス')) return '#E4F3EA';
+  if (store.includes('Amazon')) return '#EEF3FF';
+  if (store.includes('セブン')) return '#FFF2E5';
+  if (store.includes('JR')) return '#EDF5F1';
+  return '#F2F4F3';
+}
+
+function receiptIcon(store: string) {
+  if (store.includes('JR')) return 'export' as const;
+  return 'receipt' as const;
 }
 
 const styles = StyleSheet.create({
@@ -168,43 +173,6 @@ const styles = StyleSheet.create({
   count: { color: '#11181C', fontSize: 42, fontWeight: '800', lineHeight: 48 },
   countUnit: { fontSize: 18, fontWeight: '700', marginBottom: 7 },
   amount: { color: '#66736C', marginTop: Spacing.one },
-  illustration: {
-    alignItems: 'center',
-    backgroundColor: '#EAF7EF',
-    borderRadius: 44,
-    height: 88,
-    justifyContent: 'center',
-    width: 88,
-  },
-  avatar: { alignItems: 'center', justifyContent: 'center' },
-  avatarHead: {
-    backgroundColor: '#11181C',
-    borderRadius: 12,
-    height: 24,
-    width: 24,
-  },
-  avatarBody: {
-    backgroundColor: '#ffffff',
-    borderColor: '#11181C',
-    borderRadius: 16,
-    borderWidth: 2,
-    height: 32,
-    marginTop: -2,
-    width: 42,
-  },
-  phoneBadge: {
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderColor: '#DDECE3',
-    borderRadius: 10,
-    borderWidth: 1,
-    height: 28,
-    justifyContent: 'center',
-    position: 'absolute',
-    left: 12,
-    top: 28,
-    width: 22,
-  },
   primaryButton: {
     alignItems: 'center',
     backgroundColor: Brand.primary,
@@ -240,11 +208,10 @@ const styles = StyleSheet.create({
   },
   receiptIcon: {
     alignItems: 'center',
-    backgroundColor: '#F2F4F3',
-    borderRadius: Spacing.two,
-    height: 36,
+    borderRadius: 10,
+    height: 38,
     justifyContent: 'center',
-    width: 36,
+    width: 38,
   },
   receiptMain: { flex: 1, gap: 2 },
   receiptStore: { fontWeight: '700' },

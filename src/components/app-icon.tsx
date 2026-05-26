@@ -76,6 +76,54 @@ export function ReceiptLogo({ size = 58 }: { size?: number }) {
   );
 }
 
+export function HomeIllustration({ size = 96 }: { size?: number }) {
+  return (
+    <View style={[styles.illustration, { borderRadius: size / 2, height: size, width: size }]}>
+      <View style={styles.personHair} />
+      <View style={styles.personHead}>
+        <View style={styles.personEye} />
+        <View style={[styles.personEye, styles.personEyeRight]} />
+        <View style={styles.personMouth} />
+      </View>
+      <View style={styles.personBody} />
+      <View style={styles.handPhone}>
+        <AppIcon color="#162019" name="receipt" size={13} />
+      </View>
+    </View>
+  );
+}
+
+export function ReceiptAvatar({
+  accent = '#DDECE3',
+  icon = 'receipt',
+}: {
+  accent?: string;
+  icon?: AppIconName;
+}) {
+  return (
+    <View style={[styles.receiptAvatar, { backgroundColor: accent }]}>
+      <View style={styles.receiptAvatarPaper}>
+        <AppIcon color="#162019" name={icon} size={17} />
+      </View>
+    </View>
+  );
+}
+
+export function CsvBrandBadge({ label, tone }: { label: string; tone: 'blue' | 'green' | 'orange' | 'gray' }) {
+  const colors = {
+    blue: { bg: '#EAF2FF', fg: '#2C63B7' },
+    green: { bg: '#E9F8EE', fg: '#278B56' },
+    orange: { bg: '#FFF2E3', fg: '#D06E1B' },
+    gray: { bg: '#F2F4F3', fg: '#52605A' },
+  }[tone];
+
+  return (
+    <View style={[styles.csvBadge, { backgroundColor: colors.bg }]}>
+      <ThemedText style={[styles.csvBadgeText, { color: colors.fg }]}>{label}</ThemedText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   fallback: {
     fontWeight: '800',
@@ -106,5 +154,110 @@ const styles = StyleSheet.create({
   },
   paperLineShort: {
     width: '70%',
+  },
+  illustration: {
+    alignItems: 'center',
+    backgroundColor: '#EAF7EF',
+    borderColor: '#D6EFE1',
+    borderWidth: 1,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  personHair: {
+    backgroundColor: '#162019',
+    borderRadius: 16,
+    height: 28,
+    position: 'absolute',
+    right: 25,
+    top: 20,
+    transform: [{ rotate: '-18deg' }],
+    width: 32,
+  },
+  personHead: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#162019',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    height: 31,
+    position: 'absolute',
+    right: 28,
+    top: 25,
+    width: 29,
+  },
+  personEye: {
+    backgroundColor: '#162019',
+    borderRadius: 1.5,
+    height: 3,
+    left: 8,
+    position: 'absolute',
+    top: 12,
+    width: 3,
+  },
+  personEyeRight: {
+    left: 17,
+  },
+  personMouth: {
+    borderBottomColor: '#162019',
+    borderBottomWidth: 1.5,
+    borderRadius: 5,
+    bottom: 7,
+    height: 5,
+    left: 10,
+    position: 'absolute',
+    width: 9,
+  },
+  personBody: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#162019',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    bottom: 13,
+    height: 40,
+    position: 'absolute',
+    right: 21,
+    width: 45,
+  },
+  handPhone: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#162019',
+    borderRadius: 7,
+    borderWidth: 1.5,
+    height: 28,
+    justifyContent: 'center',
+    left: 21,
+    position: 'absolute',
+    top: 36,
+    transform: [{ rotate: '-5deg' }],
+    width: 20,
+  },
+  receiptAvatar: {
+    alignItems: 'center',
+    borderRadius: 10,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  receiptAvatarPaper: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8E4',
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 28,
+    justifyContent: 'center',
+    width: 24,
+  },
+  csvBadge: {
+    alignItems: 'center',
+    borderRadius: 8,
+    minWidth: 42,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  csvBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    lineHeight: 14,
   },
 });

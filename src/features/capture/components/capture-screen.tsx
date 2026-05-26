@@ -77,6 +77,7 @@ export function CaptureScreen() {
           <View style={[styles.corner, styles.cornerBottomRight]} />
 
           <View style={styles.receiptPreview}>
+            <View style={styles.receiptTopEdge} />
             <ThemedText style={styles.previewStore}>FamilyMart</ThemedText>
             <ThemedText type="small" style={styles.previewLabel}>
               領　収　証
@@ -93,6 +94,7 @@ export function CaptureScreen() {
               <ThemedText style={styles.totalAmount}>¥280</ThemedText>
             </View>
             <View style={styles.barcode} />
+            <ThemedText type="small" style={styles.previewNumber}>No.1234-5678-9012</ThemedText>
           </View>
         </View>
 
@@ -206,6 +208,14 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     width: '70%',
   },
+  receiptTopEdge: {
+    backgroundColor: '#F0F0EC',
+    height: 6,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
   previewStore: { fontSize: 28, fontWeight: '800', textAlign: 'center' },
   previewLabel: { marginTop: Spacing.two, textAlign: 'center' },
   previewLine: { marginTop: Spacing.three, textAlign: 'center' },
@@ -221,7 +231,13 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontWeight: '700' },
   totalAmount: { fontSize: 18, fontWeight: '800' },
-  barcode: { backgroundColor: '#111111', height: 18, marginTop: Spacing.four, opacity: 0.86 },
+  barcode: {
+    backgroundColor: '#111111',
+    height: 18,
+    marginTop: Spacing.four,
+    opacity: 0.86,
+  },
+  previewNumber: { marginTop: Spacing.one, opacity: 0.62, textAlign: 'center' },
   banner: {
     backgroundColor: Brand.warningBackground,
     borderRadius: Spacing.two,
@@ -253,6 +269,10 @@ const styles = StyleSheet.create({
     height: 80,
     justifyContent: 'center',
     width: 80,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
   },
   shutterInner: {
     alignItems: 'center',

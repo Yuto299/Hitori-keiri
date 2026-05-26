@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { AppIcon } from '@/components/app-icon';
+import { AppIcon, ReceiptAvatar } from '@/components/app-icon';
 import { categoryName } from '@/constants/categories';
 import { Brand, Spacing } from '@/constants/theme';
 import { useReceipts } from '@/features/receipts/hooks/use-receipts';
@@ -112,7 +112,7 @@ export function ReceiptListScreen() {
                   }
                 }}>
                 <View style={styles.rowIcon}>
-                  <AppIcon color="#14201A" name="receipt" size={19} />
+                  <ReceiptAvatar accent={receiptAccent(item.store)} icon={receiptIcon(item.store)} />
                 </View>
                 <View style={styles.rowMain}>
                   <ThemedText style={styles.bold}>{item.store}</ThemedText>
@@ -128,6 +128,18 @@ export function ReceiptListScreen() {
       </SafeAreaView>
     </ThemedView>
   );
+}
+
+function receiptAccent(store: string) {
+  if (store.includes('ファミリー')) return '#E8F7EF';
+  if (store.includes('スターバックス')) return '#E4F3EA';
+  if (store.includes('Amazon')) return '#EEF3FF';
+  return '#F2F4F3';
+}
+
+function receiptIcon(store: string) {
+  if (store.includes('Amazon')) return 'csv' as const;
+  return 'receipt' as const;
 }
 
 function TabButton({
@@ -215,8 +227,6 @@ const styles = StyleSheet.create({
   },
   rowIcon: {
     alignItems: 'center',
-    backgroundColor: '#F2F4F3',
-    borderRadius: Spacing.two,
     height: 38,
     justifyContent: 'center',
     width: 38,

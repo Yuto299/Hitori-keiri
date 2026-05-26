@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { AppIcon } from '@/components/app-icon';
+import { AppIcon, CsvBrandBadge } from '@/components/app-icon';
 import { PLANS } from '@/config/plans';
 import { Brand, Spacing } from '@/constants/theme';
 import {
@@ -116,9 +116,7 @@ export function ExportScreen() {
                       <ThemedText style={[styles.optionLabel, active && styles.optionTextActive]}>
                         {f.label}
                       </ThemedText>
-                      <ThemedText style={styles.formatBadge}>
-                        {f.id === 'generic' ? 'CSV' : f.id}
-                      </ThemedText>
+                      <CsvBrandBadge label={formatBadgeLabel(f.id)} tone={formatBadgeTone(f.id)} />
                       {!allowed && (
                         <ThemedText type="small" style={styles.lock}>
                           Light以上
@@ -143,6 +141,20 @@ export function ExportScreen() {
       </SafeAreaView>
     </ThemedView>
   );
+}
+
+function formatBadgeLabel(id: CsvFormatId) {
+  if (id === 'freee') return 'freee';
+  if (id === 'moneyforward') return 'MF';
+  if (id === 'yayoi') return '弥生';
+  return 'CSV';
+}
+
+function formatBadgeTone(id: CsvFormatId) {
+  if (id === 'freee') return 'blue' as const;
+  if (id === 'moneyforward') return 'orange' as const;
+  if (id === 'yayoi') return 'green' as const;
+  return 'gray' as const;
 }
 
 const styles = StyleSheet.create({
@@ -183,7 +195,6 @@ const styles = StyleSheet.create({
   radioDot: { backgroundColor: Brand.primary, borderRadius: 4, height: 8, width: 8 },
   optionLabel: { flex: 1 },
   optionTextActive: { color: Brand.primaryDark, fontWeight: '600' },
-  formatBadge: { color: '#4971A9', fontSize: 13, fontWeight: '800' },
   lock: { color: '#A98600' },
   exportButton: {
     backgroundColor: Brand.primary,
