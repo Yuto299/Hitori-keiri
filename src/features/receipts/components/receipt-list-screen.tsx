@@ -120,7 +120,9 @@ export function ReceiptListScreen() {
                     {item.date} ・ {categoryName(item.category)}
                   </ThemedText>
                 </View>
-                <ThemedText style={styles.bold}>¥{item.amountYen.toLocaleString()}</ThemedText>
+                <View style={styles.amountColumn}>
+                  <ThemedText style={styles.amountText}>¥{item.amountYen.toLocaleString()}</ThemedText>
+                </View>
               </Pressable>
             )}
           />
@@ -231,7 +233,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 38,
   },
-  rowMain: { gap: 2, flexShrink: 1, paddingRight: Spacing.two },
+  rowMain: { flex: 1, gap: 2, minWidth: 0, paddingRight: Spacing.two },
   meta: { color: '#66736C' },
   bold: { fontWeight: '700' },
+  amountColumn: {
+    alignItems: 'flex-end',
+    minWidth: 82,
+  },
+  amountText: {
+    fontWeight: '800',
+    textAlign: 'right',
+  },
 });

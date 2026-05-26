@@ -115,9 +115,11 @@ export default function HomeScreen() {
                     {receipt.date} ・ {categoryName(receipt.category)}
                   </ThemedText>
                 </View>
-                <ThemedText style={styles.receiptAmount}>
-                  ¥{receipt.amountYen.toLocaleString()}
-                </ThemedText>
+                <View style={styles.receiptAmountColumn}>
+                  <ThemedText style={styles.receiptAmount}>
+                    ¥{receipt.amountYen.toLocaleString()}
+                  </ThemedText>
+                </View>
               </Pressable>
             ))}
           </View>
@@ -216,5 +218,9 @@ const styles = StyleSheet.create({
   receiptMain: { flex: 1, gap: 2 },
   receiptStore: { fontWeight: '700' },
   receiptMeta: { color: '#66736C' },
-  receiptAmount: { fontSize: 17, fontWeight: '800' },
+  receiptAmountColumn: {
+    alignItems: 'flex-end',
+    minWidth: 76,
+  },
+  receiptAmount: { fontSize: 17, fontWeight: '800', textAlign: 'right' },
 });
