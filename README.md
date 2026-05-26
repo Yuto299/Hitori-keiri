@@ -48,6 +48,15 @@ npm start
 
 それでも `8081` が使用中と出る場合は、既存の Expo/Node プロセスを止めてから再実行する。
 
+静的ビルドでUIだけ確認する場合:
+
+```bash
+npx expo export --platform web --clear
+npx expo serve dist
+```
+
+`python3 -m http.server` などの素の静的サーバでは `/explore` などのExpo Routerパスが404になることがあるため、`npx expo serve dist` を使う。
+
 iOS/Android 実機は Development Build が必要(SDK 55 は Expo Go 非対応)。
 
 ## ステータス
