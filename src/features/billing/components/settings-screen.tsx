@@ -17,7 +17,10 @@ import { ThemedView } from '@/components/themed-view';
 import { AppIcon } from '@/components/app-icon';
 import { PLANS, type PlanId } from '@/config/plans';
 import { Brand, Spacing } from '@/constants/theme';
+import { AuthForm } from '@/features/auth/components/auth-form';
+import { signOut } from '@/features/auth/hooks/use-auth';
 import { remainingReceipts } from '@/features/billing/plan-access';
+import { isSupabaseConfigured } from '@/lib/env';
 import { countReceiptsInMonth } from '@/lib/db/receipt-repository';
 import { useApp } from '@/shared/app-context';
 
@@ -28,8 +31,10 @@ function currentYearMonth(): string {
 }
 
 export function SettingsScreen() {
-  const { plan, setPlan, userId } = useApp();
+  const { plan, setPlan, userId, authStatus, email } = useApp();
   const [used, setUsed] = useState(0);
+  const [showAuth, setShowAuth] = useState(false);
+  const supabaseReady = isSupabaseConfigured();
 
   useFocusEffect(
     useCallback(() => {
@@ -119,6 +124,52 @@ export function SettingsScreen() {
               </Pressable>
             ))}
           </View>
+
+          <ThemedText type="small" style={styles.devLabel}>
+            アカウント
+          </ThemedText>
+          {authStatus === 'signed-in' ? (
+            <View style={styles.accountCard}>
+              <View style={{ flex: 1 }}>
+                <ThemedText style={styles.accountEmail}>{email}</ThemedText>
+                <ThemedText type="small" style={styles.accountStatus}>
+                  サインイン済み(データはサーバに同期されます)
+                </ThemedText>
+              </View>
+              <Pressable
+                onPress={async () => {
+                  await signOut();
+                }}
+                style={styles.signOutButton}>
+                <ThemedText style={styles.signOutText}>サインアウト</ThemedText>
+              </Pressable>
+            </View>
+          ) : showAuth ? (
+            <AuthForm
+              onSuccess={() => setShowAuth(false)}
+              onCancel={() => setShowAuth(false)}
+            />
+          ) : (
+            <View style={styles.accountCard}>
+              <View style={{ flex: 1 }}>
+                <ThemedText style={styles.accountEmail}>
+                  {supabaseReady ? '未サインイン' : 'ローカルのみ動作中'}
+                </ThemedText>
+                <ThemedText type="small" style={styles.accountStatus}>
+                  {supabaseReady
+                    ? 'サインインするとレシートをサーバに同期できます'
+                    : '.env.local に Supabase を設定してください'}
+                </ThemedText>
+              </View>
+              {supabaseReady && (
+                <Pressable
+                  onPress={() => setShowAuth(true)}
+                  style={styles.signInButton}>
+                  <ThemedText style={styles.signInText}>サインイン</ThemedText>
+                </Pressable>
+              )}
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -199,4 +250,31 @@ const styles = StyleSheet.create({
   planChipActive: { backgroundColor: Brand.primaryLight, borderColor: Brand.primary },
   planChipName: { fontWeight: '800' },
   planChipTextActive: { color: Brand.primaryDark, fontWeight: '700' },
+  accountCard: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: '#E5EAE7',
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: Spacing.two,
+    padding: Spacing.three,
+  },
+  accountEmail: { fontWeight: '700' },
+  accountStatus: { opacity: 0.6, marginTop: 2 },
+  signInButton: {
+    backgroundColor: Brand.primary,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  signInText: { color: '#ffffff', fontWeight: '700' },
+  signOutButton: {
+    borderColor: '#D6DED9',
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  signOutText: { fontWeight: '700' },
 });
