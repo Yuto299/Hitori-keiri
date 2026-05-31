@@ -1,33 +1,41 @@
 /**
- * アプリ全体で共有する軽量な状態(プラン・ユーザーID)
+ * アプリ全体で共有する軽量な状態(プラン・ユーザーID・認証状態)
  *
- * 認証(フェーズ3)導入前の暫定。いまはローカルの匿名ユーザーとして扱い、
- * プランは手元で切り替えられるようにして機能ゲート(FR-21/22)の挙動を確認できる。
- * 認証導入時に userId は Supabase の user id へ、プランは Subscription へ置き換える。
+ * フェーズ3 で認証(Supabase)を導入。サインインしていれば Supabase の user id、
+ * していなければ "local-user" 匿名 ID を使う(ローカル限定モード)。
+ * プランは認証導入後も「設定画面の開発用切替」を残しつつ、フェーズ6で
+ * Supabase の subscriptions テーブルから取得する形に進化させる。
  */
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 import type { PlanId } from '@/config/plans';
+import { useAuth, type AuthStatus } from '@/features/auth/hooks/use-auth';
 
 interface AppState {
-  /** 現在のユーザーID(暫定: ローカル匿名) */
   userId: string;
+  /** 認証ステータス。未サインインや Supabase 未設定でもアプリは使える */
+  authStatus: AuthStatus;
+  email: string | null;
   plan: PlanId;
   setPlan: (plan: PlanId) => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
 
-/** 暫定の匿名ユーザーID(認証導入で置き換え) */
-const LOCAL_USER_ID = 'local-user';
-
 export function AppProvider({ children }: { children: ReactNode }) {
+  const auth = useAuth();
   const [plan, setPlan] = useState<PlanId>('light');
 
   const value = useMemo<AppState>(
-    () => ({ userId: LOCAL_USER_ID, plan, setPlan }),
-    [plan],
+    () => ({
+      userId: auth.userId,
+      authStatus: auth.status,
+      email: auth.email,
+      plan,
+      setPlan,
+    }),
+    [auth.userId, auth.status, auth.email, plan],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

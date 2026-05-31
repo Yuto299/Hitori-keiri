@@ -4,24 +4,22 @@
  * Expo はクライアント公開変数を `EXPO_PUBLIC_` 接頭辞で扱う。
  * 秘密鍵(ANTHROPIC_API_KEY 等)はここでは扱わない —— サーバ側
  * (Supabase Edge Function)でのみ使用する。詳細は docs/development/tech-stack.md。
+ *
+ * Supabase はオプショナル(未設定でもアプリは動く)。未設定時は
+ * env.supabase が null になり、ログインせずローカル限定で利用する。
  */
 
-function required(value: string | undefined, name: string): string {
-  if (!value) {
-    throw new Error(
-      `環境変数 ${name} が未設定です。.env.local を確認してください(.env.example 参照)。`,
-    );
-  }
-  return value;
-}
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 export const env = {
-  supabaseUrl: required(
-    process.env.EXPO_PUBLIC_SUPABASE_URL,
-    "EXPO_PUBLIC_SUPABASE_URL",
-  ),
-  supabaseAnonKey: required(
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-    "EXPO_PUBLIC_SUPABASE_ANON_KEY",
-  ),
+  /** Supabase が設定されていれば url/anonKey を返す。未設定なら null。 */
+  supabase:
+    supabaseUrl && supabaseAnonKey
+      ? { url: supabaseUrl, anonKey: supabaseAnonKey }
+      : null,
 };
+
+export function isSupabaseConfigured(): boolean {
+  return env.supabase !== null;
+}
