@@ -107,9 +107,7 @@ export function ReceiptListScreen() {
               <Pressable
                 style={styles.row}
                 onPress={() => {
-                  if (!item.demo) {
-                    router.push({ pathname: '/receipt/[id]', params: { id: item.id } });
-                  }
+                  router.push({ pathname: '/receipt/[id]', params: { id: item.id } });
                 }}>
                 <View style={styles.rowIcon}>
                   <ReceiptAvatar accent={receiptAccent(item.store)} icon={receiptIcon(item.store)} />

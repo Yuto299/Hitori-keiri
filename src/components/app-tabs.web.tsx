@@ -30,24 +30,27 @@ export default function AppTabs() {
           <TabSlot style={[styles.tabSlot, !tabsVisible && styles.tabSlotFull]} />
         </View>
       </View>
-      {tabsVisible && (
-        <TabList asChild>
-          <CustomTabList>
-            <TabTrigger name="home" href="/" asChild>
-              <TabButton icon="home">ホーム</TabButton>
-            </TabTrigger>
-            <TabTrigger name="explore" href="/explore" asChild>
-              <TabButton icon="receipt">レシート</TabButton>
-            </TabTrigger>
-            <TabTrigger name="export" href="/export" asChild>
-              <TabButton icon="export">出力</TabButton>
-            </TabTrigger>
-            <TabTrigger name="settings" href="/settings" asChild>
-              <TabButton icon="settings">設定</TabButton>
-            </TabTrigger>
-          </CustomTabList>
-        </TabList>
-      )}
+
+      {/*
+        Expo Router の <Tabs> は <TabList> を常に必要とする(条件描画NG)。
+        タブを隠したいときは hidden スタイルで非表示にする(構造は維持)。
+      */}
+      <TabList asChild>
+        <CustomTabList hidden={!tabsVisible}>
+          <TabTrigger name="index" href="/" asChild>
+            <TabButton icon="home">ホーム</TabButton>
+          </TabTrigger>
+          <TabTrigger name="explore" href="/explore" asChild>
+            <TabButton icon="receipt">レシート</TabButton>
+          </TabTrigger>
+          <TabTrigger name="export" href="/export" asChild>
+            <TabButton icon="export">出力</TabButton>
+          </TabTrigger>
+          <TabTrigger name="settings" href="/settings" asChild>
+            <TabButton icon="settings">設定</TabButton>
+          </TabTrigger>
+        </CustomTabList>
+      </TabList>
     </Tabs>
   );
 }
@@ -72,9 +75,10 @@ export function TabButton({
   );
 }
 
-export function CustomTabList(props: TabListProps) {
+export function CustomTabList(props: TabListProps & { hidden?: boolean }) {
+  const { hidden, ...rest } = props;
   return (
-    <View {...props} style={styles.tabListContainer}>
+    <View {...rest} style={[styles.tabListContainer, hidden && styles.tabListHidden]}>
       <View style={styles.innerContainer}>
         {props.children}
       </View>
@@ -127,6 +131,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+  },
+  tabListHidden: {
+    display: 'none',
   },
   innerContainer: {
     backgroundColor: '#ffffff',

@@ -102,9 +102,7 @@ export default function HomeScreen() {
                 key={receipt.id}
                 style={styles.receiptRow}
                 onPress={() => {
-                  if (!receipt.demo) {
-                    router.push({ pathname: '/receipt/[id]', params: { id: receipt.id } });
-                  }
+                  router.push({ pathname: '/receipt/[id]', params: { id: receipt.id } });
                 }}>
                 <View style={styles.receiptIcon}>
                   <ReceiptAvatar accent={receiptAccent(receipt.store)} icon={receiptIcon(receipt.store)} />
