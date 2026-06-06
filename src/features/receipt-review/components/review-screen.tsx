@@ -18,7 +18,8 @@ import { PLANS } from '@/config/plans';
 import { CATEGORIES } from '@/constants/categories';
 import { Brand, Spacing } from '@/constants/theme';
 import { canAddReceipt } from '@/features/billing/plan-access';
-import { countReceiptsInMonth, createReceipt } from '@/lib/db/receipt-repository';
+import { countReceiptsInMonth } from '@/lib/db/receipt-repository';
+import { createReceiptSynced } from '@/lib/sync/receipt-sync';
 import { useApp } from '@/shared/app-context';
 import type { CategoryId, OcrExtraction } from '@/shared/types/receipt';
 
@@ -73,7 +74,7 @@ export function ReviewScreen() {
 
       // Free は画像を保存しない(FR-12)。Light/Pro は画像URIを保持。
       const keepImage = plan !== 'free';
-      await createReceipt({
+      await createReceiptSynced({
         userId,
         date,
         amountYen: Number(amount),

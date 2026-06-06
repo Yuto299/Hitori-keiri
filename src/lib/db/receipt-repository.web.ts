@@ -10,17 +10,21 @@
 
 import type { NewReceipt, Receipt } from '@/shared/types/receipt';
 
+import { generateUuid } from './id';
+
 const store: Receipt[] = [];
 
-function generateId(): string {
-  return `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+/** リモート由来の既存IDレシートをそのまま挿入(同期用)。既存なら無視。 */
+export async function insertReceipt(receipt: Receipt): Promise<void> {
+  if (store.some((r) => r.id === receipt.id)) return;
+  store.unshift(receipt);
 }
 
 export async function createReceipt(input: NewReceipt): Promise<Receipt> {
   const now = new Date().toISOString();
   const receipt: Receipt = {
     ...input,
-    id: generateId(),
+    id: generateUuid(),
     createdAt: now,
     updatedAt: now,
   };

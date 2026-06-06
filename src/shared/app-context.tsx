@@ -7,10 +7,11 @@
  * Supabase の subscriptions テーブルから取得する形に進化させる。
  */
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { PlanId } from '@/config/plans';
 import { useAuth, type AuthStatus } from '@/features/auth/hooks/use-auth';
+import { pullFromRemote } from '@/lib/sync/receipt-sync';
 
 interface AppState {
   userId: string;
@@ -26,6 +27,18 @@ const AppContext = createContext<AppState | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const [plan, setPlan] = useState<PlanId>('light');
+
+  // サインイン時に Supabase からレシートを取ってきてローカルにマージ
+  useEffect(() => {
+    if (auth.status !== 'signed-in') return;
+    pullFromRemote(auth.userId)
+      .then(({ pulled, added }) => {
+        if (added > 0) {
+          console.log(`[sync] pulled ${pulled}, added ${added} new receipts`);
+        }
+      })
+      .catch((e) => console.warn('[sync] pull failed:', e));
+  }, [auth.status, auth.userId]);
 
   const value = useMemo<AppState>(
     () => ({

@@ -6,7 +6,7 @@
  * Supabase 未設定時は null を返し、呼び出し側はローカルだけで完結する。
  */
 
-import type { NewReceipt, Receipt, ReceiptMemo } from '@/shared/types/receipt';
+import type { Receipt, ReceiptMemo } from '@/shared/types/receipt';
 
 import { getSupabase } from './client';
 
@@ -54,22 +54,27 @@ export async function fetchRemoteReceipts(): Promise<Receipt[] | null> {
   return (data as ReceiptRow[]).map(rowToReceipt);
 }
 
-/** 新規レシートをリモートに挿入(RLSにより user_id は自動で auth.uid()) */
-export async function pushRemoteReceipt(input: NewReceipt): Promise<Receipt | null> {
+/**
+ * ローカルで作成済みのレシート(IDあり)をリモートに挿入。
+ * ID も含めて送ることで、ローカル=リモートで同じUUIDを共有する(sync-strategy.md)。
+ * 既存IDなら upsert で更新(同期再実行時の冪等性)。
+ */
+export async function pushRemoteReceipt(receipt: Receipt): Promise<Receipt | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('receipts')
-    .insert({
-      user_id: input.userId, // RLS が一致を検証
-      date: input.date,
-      amount_yen: input.amountYen,
-      store: input.store,
-      category: input.category,
-      memo: input.memo,
-      image_status: input.imageStatus,
-      image_path: input.imagePath ?? null,
-      captured_plan: input.capturedPlan,
+    .upsert({
+      id: receipt.id,
+      user_id: receipt.userId, // RLS が一致を検証
+      date: receipt.date,
+      amount_yen: receipt.amountYen,
+      store: receipt.store,
+      category: receipt.category,
+      memo: receipt.memo,
+      image_status: receipt.imageStatus,
+      image_path: receipt.imagePath ?? null,
+      captured_plan: receipt.capturedPlan,
     })
     .select('*')
     .single();

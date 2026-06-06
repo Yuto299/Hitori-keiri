@@ -15,7 +15,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { categoryName } from '@/constants/categories';
 import { Spacing } from '@/constants/theme';
-import { deleteReceipt, getReceipt } from '@/lib/db/receipt-repository';
+import { getReceipt } from '@/lib/db/receipt-repository';
+import { deleteReceiptSynced } from '@/lib/sync/receipt-sync';
 import type { Receipt } from '@/shared/types/receipt';
 
 export function ReceiptDetailScreen() {
@@ -49,7 +50,7 @@ export function ReceiptDetailScreen() {
         text: '削除',
         style: 'destructive',
         onPress: async () => {
-          await deleteReceipt(receipt.id);
+          await deleteReceiptSynced(receipt.id);
           router.back();
         },
       },

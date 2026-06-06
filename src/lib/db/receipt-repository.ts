@@ -7,6 +7,7 @@
 
 import type { NewReceipt, Receipt, ReceiptMemo } from '@/shared/types/receipt';
 
+import { generateUuid } from './id';
 import { getDb } from './index';
 
 /** DB 行の形(snake_case・memo は JSON 文字列) */
@@ -48,9 +49,31 @@ function rowToReceipt(row: ReceiptRow): Receipt {
   };
 }
 
-function generateId(): string {
-  // 端末ローカルの一意IDで十分。サーバ同期時に UUID と突き合わせる(フェーズ3)。
-  return `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+// ID は UUID(端末で生成 → そのまま Supabase でも使う)で揃える(sync-strategy.md)
+
+/**
+ * リモートから取得した既存IDの Receipt をそのまま挿入する(同期で使う)。
+ * 同じ id がローカルに既にある場合は無視(REPLACE しない・MVP方針)。
+ */
+export async function insertReceipt(receipt: Receipt): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT OR IGNORE INTO receipts
+      (id, user_id, date, amount_yen, store, category, memo, image_status, image_path, captured_plan, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    receipt.id,
+    receipt.userId,
+    receipt.date,
+    receipt.amountYen,
+    receipt.store,
+    receipt.category,
+    JSON.stringify(receipt.memo),
+    receipt.imageStatus,
+    receipt.imagePath ?? null,
+    receipt.capturedPlan,
+    receipt.createdAt,
+    receipt.updatedAt,
+  );
 }
 
 /** 1件作成して保存後の Receipt を返す */
@@ -59,7 +82,7 @@ export async function createReceipt(input: NewReceipt): Promise<Receipt> {
   const now = new Date().toISOString();
   const receipt: Receipt = {
     ...input,
-    id: generateId(),
+    id: generateUuid(),
     createdAt: now,
     updatedAt: now,
   };

@@ -25,6 +25,7 @@
     "expo": "~55.0.26",
     "expo-camera": "~55.0.19",
     "expo-constants": "~55.0.16",
+    "expo-crypto": "~55.0.15",
     "expo-device": "~55.0.17",
     "expo-file-system": "~55.0.22",
     "expo-font": "~55.0.8",
