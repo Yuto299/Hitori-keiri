@@ -1,7 +1,7 @@
 # 実装ロードマップ
 
 > ひとり経理(Hitori Keiri)MVPの実装計画。要件は [docs/requirements](../requirements/README.md)(全8章確定)。
-> 最終更新: 2026-05-26 / ステータス: フェーズ1 着手
+> 最終更新: 2026-05-26 / ステータス: フェーズ3(認証・同期)実装中
 
 ---
 
@@ -52,14 +52,20 @@
 - 検証:typecheck・lint クリーン / test 9件 PASS。Web/実機での手動フロー確認はこの後
 - 残:連続撮影(FR-03)・編集(再利用)はフェーズ後半。expo-camera のリッチUIも後半で差し替え
 
-### フェーズ3:Supabase 連携(認証・同期)
+### フェーズ3:Supabase 連携(認証・同期)✅(MVP最低限まで実装)
 **ゴール**:ログインでき、データがサーバに同期され、機種変更で復元できる。
 
-- [ ] Supabase プロジェクト作成(※オーナー確認のうえ。無料枠)
-- [ ] 認証(`features/auth/`):Apple / Google / メール(FR-25)
-- [ ] RLS ポリシー(`supabase/migrations/`):user_id 単位の分離
-- [ ] ローカル(SQLite)↔ リモート(Postgres)同期。購入復元の土台
-- 検証:ログイン→撮影→別端末/再インストールで復元
+- [x] Supabase プロジェクト作成・無料枠で運用開始(オーナー作業)
+- [x] マイグレーション適用(receipts/subscriptions/category_learning + RLS + 自動トリガー)
+- [x] 認証(`features/auth/`):**メール**(Apple/Googleは後続)
+- [x] RLS ポリシー:user_id = auth.uid() で全テーブル分離
+- [x] ローカル(SQLite/Webインメモリ)↔ リモート(Postgres)同期
+  - クライアントUUID生成(`lib/db/id.ts`)でID統一
+  - 保存時に Supabase へ upsert / サインイン時に pull してマージ
+  - 失敗してもUIを止めない(ローカルが正)
+- [x] 副次修正:ルート構造をタブグループ化(`(tabs)/`)し、タブ外画面への遷移を可能に
+- 検証:Web で サインアップ → Users/subscriptions レコード生成、ホーム→撮影→確認→保存が遷移する状態を確認
+- 残:Apple / Google サインイン、画像 Storage 同期、購入復元 → フェーズ後半
 
 ### フェーズ4:OCR 本実装(Claude API)
 **ゴール**:実レシートから日付/金額/店名/科目が自動抽出される。
@@ -135,3 +141,7 @@ npm run web          # ブラウザで http://localhost:8081 を開く(動作確
   - 設定のプラン手動切替は開発用。フェーズ6の課金(購入フロー)で置き換える。
   - 出力/設定タブのアイコンは暫定で home/explore を流用。専用アイコンは仕上げ時。
 - 2026-05-26: **Web起動確認**。`npm run web` で http://localhost:8081 が起動、全ルート(/, /explore, /export, /settings, /capture)が HTTP 200。ブラウザでコアフロー一式が触れる状態になった(M1 達成相当、OCRはモック)。
+- 2026-05-26: フェーズ3 認証(メール)実装。Supabaseプロジェクト作成・マイグレーション適用・サインアップ動作確認。設定画面に認証フォームを埋め込み(タブ外ルートを増やさない設計)。Web向けに Supabase クライアントを localStorage 分岐(`.web.ts`)。
+- 2026-05-26: 実機テスト手順を docs/development/device-testing.md にメモ化(iPhone + Mac で eas go を推奨)。
+- 2026-05-26: **ルート構造の構造的バグを修正**。タブとタブ外画面が src/app/ 直下に混在し、ホームの「レシートを撮る」を押しても /capture に遷移しないことが判明。タブ画面を `(tabs)/` グループに集約、`_layout.tsx` を `<Stack/>` に変更、`<TabList>` を常表示(条件描画はExpo Routerが許さない)。これにより M1 のコアフローがブラウザで完全に動作。
+- 2026-05-26: **フェーズ3 同期実装**。expo-crypto でUUID生成、ローカル/Supabase で同じIDを共有(sync-strategy案1)。`lib/sync/receipt-sync.ts` を新設し、createReceiptSynced / deleteReceiptSynced / pullFromRemote を実装。AppProvider がサインイン状態を購読して自動 pull。失敗時はUIを止めず console.warn のみ(ローカルが正)。テスト16件 PASS。
