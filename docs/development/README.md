@@ -9,5 +9,6 @@
 | [roadmap.md](./roadmap.md) | 実装ロードマップ(フェーズ・タスク・進捗ログ) |
 | [supabase-setup.md](./supabase-setup.md) | Supabase プロジェクト作成・接続の手順(オーナー作業) |
 | [sync-strategy.md](./sync-strategy.md) | ローカル ↔ Supabase 同期戦略(設計) |
+| [device-testing.md](./device-testing.md) | 実機テスト(iPhone/Android)の選択肢メモ |
 
 開発時の規約は、リポジトリ直下の [AGENTS.md](../../AGENTS.md)(= CLAUDE.md が参照)に集約している。
