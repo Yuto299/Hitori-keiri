@@ -16,7 +16,7 @@ import { ThemedView } from '@/components/themed-view';
 import { AppIcon } from '@/components/app-icon';
 import { PLANS } from '@/config/plans';
 import { CATEGORIES } from '@/constants/categories';
-import { Brand, Spacing } from '@/constants/theme';
+import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
 import { canAddReceipt } from '@/features/billing/plan-access';
 import { countReceiptsInMonth } from '@/lib/db/receipt-repository';
 import { createReceiptSynced } from '@/lib/sync/receipt-sync';
@@ -98,7 +98,7 @@ export function ReviewScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.nav}>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <AppIcon color="#11181C" name="back" size={24} />
+            <AppIcon color={Palette.text} name="back" size={24} />
           </Pressable>
           <ThemedText style={styles.navTitle}>内容を確認</ThemedText>
           <Pressable disabled={saving} onPress={handleSave}>
@@ -111,7 +111,7 @@ export function ReviewScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Field label="日付">
             <View style={styles.inputWrap}>
-              <AppIcon color="#4D5A53" name="calendar" size={19} />
+              <AppIcon color={Palette.textSecondary} name="calendar" size={19} />
               <TextInput
                 style={styles.inputInWrap}
                 value={date}
@@ -196,7 +196,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFBFA' },
+  container: { flex: 1, backgroundColor: Palette.backgroundScreen },
   safeArea: { flex: 1 },
   nav: {
     alignItems: 'center',
@@ -216,31 +216,31 @@ const styles = StyleSheet.create({
   disabledText: { opacity: 0.5 },
   content: { padding: Spacing.three, paddingBottom: Spacing.six, gap: Spacing.three },
   field: { gap: Spacing.two },
-  fieldLabel: { color: '#4D5A53', fontWeight: '700' },
+  fieldLabel: { color: Palette.textSecondary, fontWeight: '700' },
   inputWrap: {
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderColor: '#DDE4E0',
-    borderRadius: Spacing.two,
+    backgroundColor: Palette.background,
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     gap: Spacing.two,
     paddingHorizontal: Spacing.three,
   },
-  inputPrefix: { color: '#11181C', fontWeight: '700' },
+  inputPrefix: { fontWeight: '700' },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Palette.background,
     borderWidth: 1,
-    borderColor: '#DDE4E0',
-    borderRadius: Spacing.two,
-    color: '#11181C',
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
+    color: Palette.text,
     flex: 1,
     fontSize: 16,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
   },
   inputInWrap: {
-    color: '#11181C',
+    color: Palette.text,
     flex: 1,
     fontSize: 16,
     paddingVertical: Spacing.two,
@@ -250,16 +250,16 @@ const styles = StyleSheet.create({
   categoryList: { gap: Spacing.two },
   categoryOption: {
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderColor: '#DDE4E0',
-    borderRadius: Spacing.two,
+    backgroundColor: Palette.background,
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     gap: Spacing.two,
     minHeight: 42,
     paddingHorizontal: Spacing.two,
   },
-  categoryOptionActive: { borderColor: '#B8E6CA' },
+  categoryOptionActive: { backgroundColor: Brand.primaryLight, borderColor: Brand.primary },
   radio: {
     alignItems: 'center',
     borderColor: '#B7C2BC',
@@ -271,14 +271,14 @@ const styles = StyleSheet.create({
   },
   radioActive: { backgroundColor: Brand.primary, borderColor: Brand.primary },
   radioDot: { backgroundColor: '#ffffff', borderRadius: 4, height: 8, width: 8 },
-  categoryTextActive: { color: '#1F7A4C', fontWeight: '800' },
+  categoryTextActive: { color: Brand.primaryDark, fontWeight: '800' },
   saveButton: {
     backgroundColor: Brand.primary,
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     alignItems: 'center',
     marginTop: Spacing.two,
   },
-  saveButtonText: { color: '#ffffff', fontWeight: '600' },
+  saveButtonText: { color: '#ffffff', fontWeight: '700' },
   disabled: { opacity: 0.5 },
 });

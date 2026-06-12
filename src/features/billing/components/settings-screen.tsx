@@ -16,7 +16,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppIcon } from '@/components/app-icon';
 import { PLANS, type PlanId } from '@/config/plans';
-import { Brand, Spacing } from '@/constants/theme';
+import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
 import { AuthForm } from '@/features/auth/components/auth-form';
 import { signOut } from '@/features/auth/hooks/use-auth';
 import { remainingReceipts } from '@/features/billing/plan-access';
@@ -42,10 +42,9 @@ export function SettingsScreen() {
     }, [userId]),
   );
 
-  const displayUsed = used > 0 ? used : 12;
-  const remaining = remainingReceipts(plan, displayUsed);
+  const remaining = remainingReceipts(plan, used);
   const limit = PLANS[plan].features.monthlyReceiptLimit;
-  const usageRatio = limit ? Math.min(displayUsed / limit, 1) : 0.35;
+  const usageRatio = limit ? Math.min(used / limit, 1) : 0;
 
   return (
     <ThemedView style={styles.container}>
@@ -68,9 +67,6 @@ export function SettingsScreen() {
                 </ThemedText>
               </ThemedText>
             </View>
-            <Pressable style={styles.planButton}>
-              <ThemedText style={styles.planButtonText}>プランを変更する</ThemedText>
-            </Pressable>
           </View>
 
           <View style={styles.usageCard}>
@@ -79,24 +75,26 @@ export function SettingsScreen() {
             </ThemedText>
             <View style={styles.usageRow}>
               <View style={styles.usageLabel}>
-                <AppIcon color="#66736C" name="receipt" size={17} />
+                <AppIcon color={Palette.textSecondary} name="receipt" size={17} />
                 <ThemedText type="small">レシート枚数</ThemedText>
               </View>
               <ThemedText style={styles.usageValue}>
-                {displayUsed}
+                {used}
                 {limit !== null ? ` / ${limit} 枚` : ' 枚'}
               </ThemedText>
             </View>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressBar, { width: `${usageRatio * 100}%` }]} />
-            </View>
+            {limit !== null && (
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressBar, { width: `${usageRatio * 100}%` }]} />
+              </View>
+            )}
             <View style={styles.usageRow}>
               <View style={styles.usageLabel}>
-                <AppIcon color="#66736C" name="gallery" size={17} />
+                <AppIcon color={Palette.textSecondary} name="gallery" size={17} />
                 <ThemedText type="small">画像の保存期間</ThemedText>
               </View>
-              <ThemedText type="small" style={styles.usageLink}>
-                {plan === 'free' ? '保存なし' : plan === 'light' ? 'あと18日 〉' : '無期限'}
+              <ThemedText type="small">
+                {plan === 'free' ? '保存なし' : plan === 'light' ? 'あと18日' : '無期限'}
               </ThemedText>
             </View>
             {limit !== null && (
@@ -177,7 +175,7 @@ export function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFBFA' },
+  container: { flex: 1, backgroundColor: Palette.backgroundScreen },
   safeArea: { flex: 1, paddingHorizontal: Spacing.three },
   content: { gap: Spacing.three, paddingBottom: Spacing.six },
   header: { alignItems: 'center', paddingVertical: Spacing.three },
@@ -186,7 +184,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BFE8CF',
     backgroundColor: '#DDF4E6',
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     padding: Spacing.three,
     gap: Spacing.two,
   },
@@ -198,18 +196,11 @@ const styles = StyleSheet.create({
   },
   planName: { fontSize: 20, fontWeight: '800' },
   price: { fontSize: 22, fontWeight: '800' },
-  priceSuffix: { color: '#11181C', fontWeight: '600' },
-  planButton: {
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.two,
-  },
-  planButtonText: { fontWeight: '800' },
+  priceSuffix: { fontWeight: '600' },
   usageCard: {
-    backgroundColor: '#ffffff',
-    borderColor: '#E5EAE7',
-    borderRadius: Spacing.two,
+    backgroundColor: Palette.background,
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
     borderWidth: 1,
     gap: Spacing.two,
     padding: Spacing.three,
@@ -227,24 +218,23 @@ const styles = StyleSheet.create({
   },
   usageValue: { fontWeight: '800' },
   progressTrack: {
-    backgroundColor: '#EDF1EE',
+    backgroundColor: Palette.divider,
     borderRadius: 5,
     height: 10,
     overflow: 'hidden',
   },
   progressBar: { backgroundColor: Brand.primary, borderRadius: 5, height: 10 },
-  usageLink: { color: '#11181C' },
-  remainingText: { color: '#66736C' },
+  remainingText: { color: Palette.textSecondary },
   devLabel: { opacity: 0.6, marginTop: Spacing.four, marginBottom: Spacing.two },
   planGrid: { flexDirection: 'row', gap: Spacing.two },
   planChip: {
-    backgroundColor: '#ffffff',
+    backgroundColor: Palette.background,
     flex: 1,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: '#D6DED9',
+    borderColor: Palette.border,
     gap: Spacing.one,
   },
   planChipActive: { backgroundColor: Brand.primaryLight, borderColor: Brand.primary },
@@ -252,9 +242,9 @@ const styles = StyleSheet.create({
   planChipTextActive: { color: Brand.primaryDark, fontWeight: '700' },
   accountCard: {
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderColor: '#E5EAE7',
-    borderRadius: Spacing.two,
+    backgroundColor: Palette.background,
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     gap: Spacing.two,
@@ -264,14 +254,14 @@ const styles = StyleSheet.create({
   accountStatus: { opacity: 0.6, marginTop: 2 },
   signInButton: {
     backgroundColor: Brand.primary,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
   signInText: { color: '#ffffff', fontWeight: '700' },
   signOutButton: {
-    borderColor: '#D6DED9',
-    borderRadius: Spacing.two,
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
     borderWidth: 1,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,

@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { categoryName } from '@/constants/categories';
-import { Spacing } from '@/constants/theme';
+import { Palette, Radius, Spacing } from '@/constants/theme';
 import { getReceipt } from '@/lib/db/receipt-repository';
 import { deleteReceiptSynced } from '@/lib/sync/receipt-sync';
 import type { Receipt } from '@/shared/types/receipt';
@@ -110,14 +110,14 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: Palette.backgroundScreen },
   safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: Spacing.four, gap: Spacing.three },
   imageBox: {
     height: 180,
-    borderRadius: Spacing.two,
-    backgroundColor: '#F4F6F5',
+    borderRadius: Radius.md,
+    backgroundColor: Palette.backgroundElement,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -129,14 +129,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.two,
     borderBottomWidth: 1,
-    borderBottomColor: '#EBEFEC',
+    borderBottomColor: Palette.divider,
   },
   rowLabel: { opacity: 0.6 },
   rowValue: { fontWeight: '600' },
   deleteButton: {
     marginTop: Spacing.three,
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: '#E0B4B4',
     alignItems: 'center',

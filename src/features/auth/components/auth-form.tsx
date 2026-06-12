@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Brand, Spacing } from '@/constants/theme';
+import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
 import { signInWithEmail, signUpWithEmail } from '@/features/auth/hooks/use-auth';
 import { isSupabaseConfigured } from '@/lib/env';
 
@@ -146,9 +146,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    borderColor: '#E5EAE7',
-    borderRadius: Spacing.two,
+    backgroundColor: Palette.background,
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
     borderWidth: 1,
     padding: Spacing.three,
     gap: Spacing.two,
@@ -163,20 +163,20 @@ const styles = StyleSheet.create({
   lead: { opacity: 0.7 },
   warn: {
     backgroundColor: Brand.warningBackground,
-    borderColor: '#F0DD9E',
+    borderColor: Brand.warningBorder,
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     padding: Spacing.two,
   },
   warnText: { color: Brand.warningText },
   field: { gap: Spacing.one },
-  fieldLabel: { color: '#4D5A53', fontWeight: '700' },
+  fieldLabel: { color: Palette.textSecondary, fontWeight: '700' },
   input: {
-    backgroundColor: '#ffffff',
-    borderColor: '#D6DED9',
-    borderRadius: Spacing.two,
+    backgroundColor: Palette.background,
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
     borderWidth: 1,
-    color: '#11181C',
+    color: Palette.text,
     fontSize: 16,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   primary: {
     alignItems: 'center',
     backgroundColor: Brand.primary,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     paddingVertical: Spacing.three,
     marginTop: Spacing.one,
   },

@@ -130,18 +130,35 @@ export async function getReceipt(id: string): Promise<Receipt | null> {
   return row ? rowToReceipt(row) : null;
 }
 
-/** 当月の枚数(FR-22 の判定に使う。YYYY-MM 前方一致) */
+/**
+ * 当月の枚数(FR-22 の判定に使う。YYYY-MM 前方一致)。
+ * date は 'YYYY/MM/DD' と 'YYYY-MM-DD' が混在しうるため '-' に正規化して比較する。
+ */
 export async function countReceiptsInMonth(
   userId: string,
   yearMonth: string, // 'YYYY-MM'
 ): Promise<number> {
   const db = await getDb();
   const row = await db.getFirstAsync<{ n: number }>(
-    `SELECT COUNT(*) AS n FROM receipts WHERE user_id = ? AND date LIKE ?`,
+    `SELECT COUNT(*) AS n FROM receipts WHERE user_id = ? AND replace(date, '/', '-') LIKE ?`,
     userId,
     `${yearMonth}-%`,
   );
   return row?.n ?? 0;
+}
+
+/** 当月の合計金額(ホームのサマリー表示用) */
+export async function sumReceiptsInMonth(
+  userId: string,
+  yearMonth: string, // 'YYYY-MM'
+): Promise<number> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ total: number | null }>(
+    `SELECT SUM(amount_yen) AS total FROM receipts WHERE user_id = ? AND replace(date, '/', '-') LIKE ?`,
+    userId,
+    `${yearMonth}-%`,
+  );
+  return row?.total ?? 0;
 }
 
 /** 削除 */

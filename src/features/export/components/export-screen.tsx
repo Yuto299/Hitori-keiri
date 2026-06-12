@@ -15,7 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppIcon, CsvBrandBadge } from '@/components/app-icon';
 import { PLANS } from '@/config/plans';
-import { Brand, Spacing } from '@/constants/theme';
+import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
 import {
   ALL_FORMATTERS,
   canUseFormat,
@@ -49,13 +49,13 @@ export function ExportScreen() {
     setBusy(true);
     try {
       const receipts = await listReceipts(userId, 100000);
+      if (receipts.length === 0) {
+        Alert.alert('レシートがありません', '撮影して保存すると書き出せます。');
+        return;
+      }
       const formatter = ALL_FORMATTERS.find((f) => f.id === selected)!;
       const year = new Date().getFullYear();
       const fileName = formatter.fileName({ year });
-      if (receipts.length === 0) {
-        setExportedFileName(fileName);
-        return;
-      }
       const content = formatter.format(receipts);
       await shareCsv(fileName, content);
       setExportedFileName(fileName);
@@ -95,7 +95,7 @@ export function ExportScreen() {
             <>
               <ThemedText style={styles.title}>CSVを書き出す</ThemedText>
               <ThemedText type="small" style={styles.note}>
-                対象: {count || 12} 件 / 現在のプラン: {PLANS[plan].name}
+                対象: {count} 件 / 現在のプラン: {PLANS[plan].name}
               </ThemedText>
 
               <ThemedText type="small" style={styles.sectionLabel}>
@@ -128,13 +128,18 @@ export function ExportScreen() {
               </View>
 
               <Pressable
-                style={[styles.exportButton, busy && styles.disabled]}
-                disabled={busy}
+                style={[styles.exportButton, (busy || count === 0) && styles.disabled]}
+                disabled={busy || count === 0}
                 onPress={handleExport}>
                 <ThemedText style={styles.exportButtonText}>
                   {busy ? '書き出し中…' : 'CSVを書き出す'}
                 </ThemedText>
               </Pressable>
+              {count === 0 && (
+                <ThemedText type="small" style={styles.emptyHint}>
+                  レシートを保存すると書き出せるようになります
+                </ThemedText>
+              )}
             </>
           )}
         </ScrollView>
@@ -158,16 +163,16 @@ function formatBadgeTone(id: CsvFormatId) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFBFA' },
+  container: { flex: 1, backgroundColor: Palette.backgroundScreen },
   safeArea: { flex: 1 },
   content: { flexGrow: 1, padding: Spacing.four, gap: Spacing.two },
   title: { fontWeight: '800', marginBottom: Spacing.three, textAlign: 'center' },
   note: { opacity: 0.6, marginBottom: Spacing.three },
   sectionLabel: { opacity: 0.7, marginBottom: Spacing.one },
   optionGroup: {
-    backgroundColor: '#ffffff',
-    borderColor: '#DDE4E0',
-    borderRadius: Spacing.two,
+    backgroundColor: Palette.background,
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -177,11 +182,11 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.three,
-    borderBottomColor: '#EDF1EE',
+    borderBottomColor: Palette.divider,
     borderBottomWidth: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Palette.background,
   },
-  optionActive: { backgroundColor: '#FBFEFC' },
+  optionActive: { backgroundColor: Brand.primaryLight },
   radio: {
     alignItems: 'center',
     borderColor: '#B7C2BC',
@@ -195,15 +200,16 @@ const styles = StyleSheet.create({
   radioDot: { backgroundColor: Brand.primary, borderRadius: 4, height: 8, width: 8 },
   optionLabel: { flex: 1 },
   optionTextActive: { color: Brand.primaryDark, fontWeight: '600' },
-  lock: { color: '#A98600' },
+  lock: { color: Brand.warningText },
   exportButton: {
     backgroundColor: Brand.primary,
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     alignItems: 'center',
     marginTop: Spacing.three,
   },
-  exportButtonText: { color: '#ffffff', fontWeight: '600' },
+  exportButtonText: { color: '#ffffff', fontWeight: '700' },
+  emptyHint: { opacity: 0.6, textAlign: 'center' },
   disabled: { opacity: 0.5 },
   doneView: {
     alignItems: 'center',
@@ -222,7 +228,7 @@ const styles = StyleSheet.create({
     width: 72,
   },
   doneTitle: { fontSize: 18, fontWeight: '800', marginBottom: Spacing.three },
-  doneMeta: { color: '#66736C' },
+  doneMeta: { color: Palette.textSecondary },
   doneActions: {
     flexDirection: 'row',
     gap: Spacing.two,
@@ -232,7 +238,7 @@ const styles = StyleSheet.create({
   outlineButton: {
     alignItems: 'center',
     borderColor: Brand.primary,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     borderWidth: 1,
     flex: 1,
     paddingVertical: Spacing.two,
@@ -241,7 +247,7 @@ const styles = StyleSheet.create({
   doneButton: {
     alignItems: 'center',
     backgroundColor: Brand.primary,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     flex: 1,
     paddingVertical: Spacing.two,
   },

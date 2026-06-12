@@ -43,11 +43,26 @@ export async function getReceipt(id: string): Promise<Receipt | null> {
   return store.find((r) => r.id === id) ?? null;
 }
 
+// date は 'YYYY/MM/DD' と 'YYYY-MM-DD' が混在しうるため '-' に正規化して比較する
+function inMonth(receipt: Receipt, userId: string, yearMonth: string): boolean {
+  return receipt.userId === userId && receipt.date.replaceAll('/', '-').startsWith(`${yearMonth}-`);
+}
+
 export async function countReceiptsInMonth(
   userId: string,
   yearMonth: string,
 ): Promise<number> {
-  return store.filter((r) => r.userId === userId && r.date.startsWith(yearMonth)).length;
+  return store.filter((r) => inMonth(r, userId, yearMonth)).length;
+}
+
+/** 当月の合計金額(ホームのサマリー表示用) */
+export async function sumReceiptsInMonth(
+  userId: string,
+  yearMonth: string,
+): Promise<number> {
+  return store
+    .filter((r) => inMonth(r, userId, yearMonth))
+    .reduce((total, r) => total + r.amountYen, 0);
 }
 
 export async function deleteReceipt(id: string): Promise<void> {

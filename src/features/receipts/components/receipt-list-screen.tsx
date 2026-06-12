@@ -2,7 +2,8 @@
  * レシート一覧画面(S-04)。
  *
  * ローカルDB のレシートを新しい順に表示。各行タップで詳細(S-05)へ。
- * 検索(FR-13)・未出力/出力済みタブはフェーズ後半。いまは一覧と空状態。
+ * 未出力/出力済みフィルタ(FR-13 周辺)はフェーズ後半で実装するため、
+ * それまでは UI 自体を置かない(押せるのに動かないUIを作らない)。
  */
 
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -12,28 +13,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { AppIcon, ReceiptAvatar } from '@/components/app-icon';
-import { categoryName } from '@/constants/categories';
-import { Brand, Spacing } from '@/constants/theme';
+import { AppIcon } from '@/components/app-icon';
+import { Palette, Radius, Spacing } from '@/constants/theme';
+import { ReceiptRow } from '@/features/receipts/components/receipt-row';
+import { DEMO_RECEIPTS, type ReceiptPreview } from '@/features/receipts/demo-receipts';
 import { useReceipts } from '@/features/receipts/hooks/use-receipts';
 import { useApp } from '@/shared/app-context';
-import type { Receipt } from '@/shared/types/receipt';
-
-type ReceiptPreview = Pick<Receipt, 'id' | 'date' | 'store' | 'amountYen' | 'category'> & {
-  demo?: boolean;
-};
-
-const DEMO_RECEIPTS: ReceiptPreview[] = [
-  { id: 'demo-familymart', date: '2026/05/25', store: 'ファミリーマート', amountYen: 280, category: 'consumables', demo: true },
-  { id: 'demo-starbucks', date: '2026/05/24', store: 'スターバックス', amountYen: 680, category: 'meeting', demo: true },
-  { id: 'demo-amazon', date: '2026/05/24', store: 'Amazon.co.jp', amountYen: 2480, category: 'consumables', demo: true },
-];
 
 export function ReceiptListScreen() {
   const router = useRouter();
   const { userId } = useApp();
   const { data: receipts = [], refetch, isLoading } = useReceipts(userId);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'exported'>('all');
   const [query, setQuery] = useState('');
 
   // 画面に戻るたび最新化(保存直後の反映)
@@ -46,12 +36,11 @@ export function ReceiptListScreen() {
   const filteredReceipts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const source: ReceiptPreview[] = receipts.length > 0 ? receipts : DEMO_RECEIPTS;
-    return source.filter((receipt) => {
-      if (filter !== 'all') return false;
-      if (!normalized) return true;
-      return `${receipt.date} ${receipt.store} ${receipt.amountYen}`.toLowerCase().includes(normalized);
-    });
-  }, [filter, query, receipts]);
+    if (!normalized) return source;
+    return source.filter((receipt) =>
+      `${receipt.date} ${receipt.store} ${receipt.amountYen}`.toLowerCase().includes(normalized),
+    );
+  }, [query, receipts]);
 
   return (
     <ThemedView style={styles.container}>
@@ -59,33 +48,18 @@ export function ReceiptListScreen() {
         <View style={styles.header}>
           <View style={styles.headerSpacer} />
           <ThemedText style={styles.title}>レシート一覧</ThemedText>
-          <Pressable style={styles.iconButton}>
-            <AppIcon color="#14201A" name="settings" size={19} />
+          <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
+            <AppIcon color={Palette.text} name="settings" size={19} />
           </Pressable>
         </View>
 
-        <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <AppIcon color="#6B7770" name="search" size={19} />
-            <TextInput
-              style={styles.searchInput}
-              value={query}
-              onChangeText={setQuery}
-              placeholder="日付・店名・金額で検索"
-            />
-          </View>
-          <Pressable style={styles.filterButton}>
-            <AppIcon color="#14201A" name="filter" size={20} />
-          </Pressable>
-        </View>
-
-        <View style={styles.tabs}>
-          <TabButton active={filter === 'all'} label="すべて" onPress={() => setFilter('all')} />
-          <TabButton active={filter === 'pending'} label="未出力" onPress={() => setFilter('pending')} />
-          <TabButton
-            active={filter === 'exported'}
-            label="出力済み"
-            onPress={() => setFilter('exported')}
+        <View style={styles.searchBox}>
+          <AppIcon color={Palette.textSecondary} name="search" size={19} />
+          <TextInput
+            style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            placeholder="日付・店名・金額で検索"
           />
         </View>
 
@@ -104,24 +78,14 @@ export function ReceiptListScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             renderItem={({ item }) => (
-              <Pressable
-                style={styles.row}
-                onPress={() => {
-                  router.push({ pathname: '/receipt/[id]', params: { id: item.id } });
-                }}>
-                <View style={styles.rowIcon}>
-                  <ReceiptAvatar accent={receiptAccent(item.store)} icon={receiptIcon(item.store)} />
-                </View>
-                <View style={styles.rowMain}>
-                  <ThemedText style={styles.bold}>{item.store}</ThemedText>
-                  <ThemedText type="small" style={styles.meta}>
-                    {item.date} ・ {categoryName(item.category)}
-                  </ThemedText>
-                </View>
-                <View style={styles.amountColumn}>
-                  <ThemedText style={styles.amountText}>¥{item.amountYen.toLocaleString()}</ThemedText>
-                </View>
-              </Pressable>
+              <ReceiptRow
+                receipt={item}
+                onPress={
+                  item.demo
+                    ? undefined
+                    : () => router.push({ pathname: '/receipt/[id]', params: { id: item.id } })
+                }
+              />
             )}
           />
         )}
@@ -130,38 +94,8 @@ export function ReceiptListScreen() {
   );
 }
 
-function receiptAccent(store: string) {
-  if (store.includes('ファミリー')) return '#E8F7EF';
-  if (store.includes('スターバックス')) return '#E4F3EA';
-  if (store.includes('Amazon')) return '#EEF3FF';
-  return '#F2F4F3';
-}
-
-function receiptIcon(store: string) {
-  if (store.includes('Amazon')) return 'csv' as const;
-  return 'receipt' as const;
-}
-
-function TabButton({
-  active,
-  label,
-  onPress,
-}: {
-  active: boolean;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable style={[styles.tabButton, active && styles.tabButtonActive]} onPress={onPress}>
-      <ThemedText type="small" style={[styles.tabText, active && styles.tabTextActive]}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFBFA' },
+  container: { flex: 1, backgroundColor: Palette.backgroundScreen },
   safeArea: { flex: 1, paddingHorizontal: Spacing.four },
   header: {
     alignItems: 'center',
@@ -173,73 +107,26 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 36 },
   iconButton: {
     alignItems: 'center',
-    borderColor: '#E3E8E4',
+    borderColor: Palette.border,
     borderRadius: 18,
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
     width: 36,
   },
-  searchRow: { flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three },
   searchBox: {
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderColor: '#DDE4E0',
-    borderRadius: Spacing.two,
+    backgroundColor: Palette.background,
+    borderColor: Palette.border,
+    borderRadius: Radius.md,
     borderWidth: 1,
-    flex: 1,
     flexDirection: 'row',
     gap: Spacing.two,
-    paddingHorizontal: Spacing.two,
+    marginBottom: Spacing.three,
+    paddingHorizontal: Spacing.three,
   },
-  searchInput: { color: '#11181C', flex: 1, fontSize: 14, paddingVertical: Spacing.two },
-  filterButton: {
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderColor: '#DDE4E0',
-    borderRadius: Spacing.two,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: 'center',
-    width: 42,
-  },
-  tabs: {
-    borderBottomColor: '#DDE4E0',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    marginBottom: Spacing.two,
-  },
-  tabButton: { alignItems: 'center', flex: 1, paddingVertical: Spacing.two },
-  tabButtonActive: { borderBottomColor: Brand.primary, borderBottomWidth: 2 },
-  tabText: { color: '#6B7770', fontWeight: '700' },
-  tabTextActive: { color: Brand.primary },
+  searchInput: { color: Palette.text, flex: 1, fontSize: 14, paddingVertical: Spacing.two + 2 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
   emptyText: { opacity: 0.6, textAlign: 'center' },
   list: { gap: Spacing.two, paddingBottom: Spacing.six },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Spacing.two,
-    backgroundColor: '#ffffff',
-  },
-  rowIcon: {
-    alignItems: 'center',
-    height: 38,
-    justifyContent: 'center',
-    width: 38,
-  },
-  rowMain: { flex: 1, gap: 2, minWidth: 0, paddingRight: Spacing.two },
-  meta: { color: '#66736C' },
-  bold: { fontWeight: '700' },
-  amountColumn: {
-    alignItems: 'flex-end',
-    minWidth: 82,
-  },
-  amountText: {
-    fontWeight: '800',
-    textAlign: 'right',
-  },
 });
