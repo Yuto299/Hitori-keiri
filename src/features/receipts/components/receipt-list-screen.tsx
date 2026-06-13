@@ -48,7 +48,10 @@ export function ReceiptListScreen() {
         <View style={styles.header}>
           <View style={styles.headerSpacer} />
           <ThemedText style={styles.title}>レシート一覧</ThemedText>
-          <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
+          <Pressable
+            accessibilityLabel="設定を開く"
+            style={styles.iconButton}
+            onPress={() => router.push('/settings')}>
             <AppIcon color={Palette.text} name="settings" size={19} />
           </Pressable>
         </View>

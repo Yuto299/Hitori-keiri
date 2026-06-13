@@ -67,13 +67,15 @@
 - 検証:Web で サインアップ → Users/subscriptions レコード生成、ホーム→撮影→確認→保存が遷移する状態を確認
 - 残:Apple / Google サインイン、画像 Storage 同期、購入復元 → フェーズ後半
 
-### フェーズ4:OCR 本実装(Claude API)
+### フェーズ4:OCR 本実装(Claude API)✅(コード側完了・オーナー作業待ち)
 **ゴール**:実レシートから日付/金額/店名/科目が自動抽出される。
 
-- [ ] Edge Function `ocr-receipt`:Claude API(Vision + Structured Outputs)※キーはサーバ
-- [ ] クライアント前処理:画像リサイズ([第6章 6.3.1](../requirements/06-ocr-ai.md#631-入力画像))
-- [ ] confidence による低確度ハイライト(確認画面)
-- [ ] 画像保存ポリシー(FR-12):Free即削除 / Light30日 / Pro無期限
+- [x] Edge Function `ocr-receipt`:Claude API(Vision + Structured Outputs)※キーはサーバ
+- [x] クライアント前処理:画像リサイズ([第6章 6.3.1](../requirements/06-ocr-ai.md#631-入力画像))
+- [x] confidence による低確度ハイライト(確認画面)
+- [x] サーバ側の枚数上限チェック(FR-22)
+- [ ] **オーナー作業**: APIキー発行 → `supabase secrets set` → `functions deploy`([ocr-implementation.md §2.1](./ocr-implementation.md))
+- [ ] 画像保存ポリシー(FR-12):Free即削除 / Light30日 / Pro無期限(→ [image-storage.md](./image-storage.md)。Storage同期と合わせて実装)
 - 検証:実レシート数種で抽出精度・コストを実測(→ 第8章へ反映)
 
 ### フェーズ5:CSV 出力 ✅(骨組み実装済み)
@@ -145,3 +147,6 @@ npm run web          # ブラウザで http://localhost:8081 を開く(動作確
 - 2026-05-26: 実機テスト手順を docs/development/device-testing.md にメモ化(iPhone + Mac で eas go を推奨)。
 - 2026-05-26: **ルート構造の構造的バグを修正**。タブとタブ外画面が src/app/ 直下に混在し、ホームの「レシートを撮る」を押しても /capture に遷移しないことが判明。タブ画面を `(tabs)/` グループに集約、`_layout.tsx` を `<Stack/>` に変更、`<TabList>` を常表示(条件描画はExpo Routerが許さない)。これにより M1 のコアフローがブラウザで完全に動作。
 - 2026-05-26: **フェーズ3 同期実装**。expo-crypto でUUID生成、ローカル/Supabase で同じIDを共有(sync-strategy案1)。`lib/sync/receipt-sync.ts` を新設し、createReceiptSynced / deleteReceiptSynced / pullFromRemote を実装。AppProvider がサインイン状態を購読して自動 pull。失敗時はUIを止めず console.warn のみ(ローカルが正)。テスト16件 PASS。
+- 2026-06-12: UIの正直化とデザイントークン整備(`theme.ts` に border/divider/backgroundScreen/Radius/Palette)。動かないUIの撤去、サンプルデータの明示、月集計の日付区切りバグ修正(`countReceiptsInMonth`)と `sumReceiptsInMonth` 追加。
+- 2026-06-13: **フェーズ4 OCR本実装(コード側完了)**。Edge Function `ocr-receipt`(JWT認証 → FR-22サーバ側枚数チェック → Claude Vision + Structured Outputs、既定モデル `claude-haiku-4-5`)+ クライアント `ocr-service.claude.ts`(expo-image-manipulator で幅1280px/JPEG化 → base64 → fetch)。Supabase 未設定 or `EXPO_PUBLIC_OCR_MOCK=1` ではモックに自動フォールバック。確認画面の偽初期値(null項目に架空の値)を空欄に修正。**残りはオーナー作業のみ**: APIキー発行 → `supabase secrets set ANTHROPIC_API_KEY` → `supabase functions deploy ocr-receipt`(→ [ocr-implementation.md §2.1](./ocr-implementation.md))。
+- 2026-06-13: **Playwright E2E 導入**(`npm run test:e2e`)。Webスモーク2本: ①初期状態(サンプル明示・0件でCSV不可)②コアフロー(撮影→ギャラリー選択→モックOCR→確認→保存→一覧反映→汎用CSVダウンロード→プラン切替)。実ブラウザで全フロー PASS を確認。アイコンのみのボタンに accessibilityLabel を付与(a11y対応兼セレクタ安定化)。

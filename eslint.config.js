@@ -5,6 +5,7 @@ const expoConfig = require("eslint-config-expo/flat");
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ["dist/*"],
+    // supabase/functions は Deno ランタイム(npm: import 等)のため対象外
+    ignores: ["dist/*", "supabase/functions/*"],
   }
 ]);

@@ -18,6 +18,8 @@ export const env = {
     supabaseUrl && supabaseAnonKey
       ? { url: supabaseUrl, anonKey: supabaseAnonKey }
       : null,
+  /** OCR を強制的にモックにする(開発用。API コストをかけずに UI を触る) */
+  ocrMock: process.env.EXPO_PUBLIC_OCR_MOCK === '1',
 };
 
 export function isSupabaseConfigured(): boolean {

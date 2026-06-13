@@ -63,7 +63,10 @@ export function CaptureScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Pressable style={styles.closeButton} onPress={() => router.back()}>
+          <Pressable
+            accessibilityLabel="閉じる"
+            style={styles.closeButton}
+            onPress={() => router.back()}>
             <AppIcon color="#ffffff" name="close" size={24} />
           </Pressable>
           <ThemedText style={styles.headerTitle}>レシートを撮影</ThemedText>
@@ -114,6 +117,7 @@ export function CaptureScreen() {
 
         <View style={styles.actions}>
           <Pressable
+            accessibilityLabel="ギャラリーから選択"
             style={[styles.toolButton, loading && styles.disabled]}
             disabled={loading}
             onPress={() => handlePick(false)}>
@@ -121,6 +125,7 @@ export function CaptureScreen() {
           </Pressable>
 
           <Pressable
+            accessibilityLabel="撮影する"
             style={[styles.shutterOuter, loading && styles.disabled]}
             disabled={loading}
             onPress={() => handlePick(true)}>
@@ -130,6 +135,7 @@ export function CaptureScreen() {
           </Pressable>
 
           <Pressable
+            accessibilityLabel="画像を取り込む"
             style={[styles.toolButton, loading && styles.disabled]}
             disabled={loading}
             onPress={() => handlePick(false)}>

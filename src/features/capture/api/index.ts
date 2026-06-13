@@ -1,16 +1,22 @@
 /**
  * OCRサービスの選択ポイント
  *
- * 現在(フェーズ2)はモックを返す。フェーズ4で Claude API 実装
- * (Edge Function 呼び出し)に差し替える。呼び出し側は getOcrService() だけ使う。
+ * 本番: Claude API(Edge Function 経由)。
+ * Supabase 未設定のローカル開発、または EXPO_PUBLIC_OCR_MOCK=1 のときはモック。
+ * 呼び出し側は getOcrService() だけ使う(実装を意識しない)。
  */
 
+import { env, isSupabaseConfigured } from '@/lib/env';
+
+import { claudeOcrService } from './ocr-service.claude';
 import { mockOcrService } from './ocr-service.mock';
 import type { OcrService } from './ocr-service';
 
 export type { OcrService, OcrInput } from './ocr-service';
 
 export function getOcrService(): OcrService {
-  // TODO(フェーズ4): 本番は Claude API 実装に差し替え
-  return mockOcrService;
+  if (env.ocrMock || !isSupabaseConfigured()) {
+    return mockOcrService;
+  }
+  return claudeOcrService;
 }

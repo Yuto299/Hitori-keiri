@@ -1,8 +1,30 @@
 # OCR 本実装(Claude API)
 
 > 関連: 要件 [第6章 OCR / AI学習](../requirements/06-ocr-ai.md) / [tech-stack.md](./tech-stack.md)
-> ステータス: 設計(モック実装は完了。実装着手はオーナー確認後)
-> 最終更新: 2026-05-26
+> ステータス: **実装済み(コード側完了)**。残りはオーナー作業のみ(下記 §2.1)
+> 最終更新: 2026-06-13
+
+## 実装済みの内容(2026-06-13)
+
+| 部品 | ファイル | 内容 |
+|---|---|---|
+| Edge Function | [supabase/functions/ocr-receipt/index.ts](../../supabase/functions/ocr-receipt/index.ts) | JWT認証 → 枚数上限チェック(FR-22・サーバ側が正)→ Claude API(Vision + Structured Outputs)→ OcrExtraction を返す |
+| クライアント | [src/features/capture/api/ocr-service.claude.ts](../../src/features/capture/api/ocr-service.claude.ts) | expo-image-manipulator で幅1280px・JPEG(0.8)に縮小 → base64 → Edge Function を fetch |
+| 切替 | [src/features/capture/api/index.ts](../../src/features/capture/api/index.ts) | Supabase 設定済みなら Claude、未設定 or `EXPO_PUBLIC_OCR_MOCK=1` ならモック |
+| モデル | 既定 `claude-haiku-4-5`(コスト優先・第6章 6.3.3) | `supabase secrets set OCR_MODEL=...` で差し替え可能(再デプロイ不要) |
+
+### 2.1 オーナーがやること(これだけで動く)
+
+```bash
+# 1. console.anthropic.com で API キー発行 + プリペイド入金(課金)
+# 2. シークレット設定とデプロイ(プロジェクトルートで)
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+supabase functions deploy ocr-receipt
+# 3. アプリでサインインして撮影 → 実レシートで精度・コストを確認(§7)
+```
+
+注意: OCR は認証必須(枚数カウントをユーザーに紐づけるため)。未サインインだと
+「OCRを使うには、設定画面からサインインしてください」と案内される。
 
 ---
 

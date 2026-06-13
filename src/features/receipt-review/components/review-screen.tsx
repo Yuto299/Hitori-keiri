@@ -41,11 +41,12 @@ export function ReviewScreen() {
     }
   }, [params.extraction]);
 
-  const [date, setDate] = useState(extraction?.date ?? '2026/05/25');
+  // OCR が読み取れなかった項目は空欄にする(偽の初期値で埋めない。ユーザーが手入力)
+  const [date, setDate] = useState(extraction?.date ?? '');
   const [amount, setAmount] = useState(
-    extraction?.amountYen != null ? String(extraction.amountYen) : '280',
+    extraction?.amountYen != null ? String(extraction.amountYen) : '',
   );
-  const [store, setStore] = useState(extraction?.store ?? 'ファミリーマート');
+  const [store, setStore] = useState(extraction?.store ?? '');
   const [category, setCategory] = useState<CategoryId>(
     extraction?.categoryCandidates?.[0] ?? 'consumables',
   );
@@ -97,7 +98,10 @@ export function ReviewScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.nav}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Pressable
+            accessibilityLabel="戻る"
+            style={styles.backButton}
+            onPress={() => router.back()}>
             <AppIcon color={Palette.text} name="back" size={24} />
           </Pressable>
           <ThemedText style={styles.navTitle}>内容を確認</ThemedText>

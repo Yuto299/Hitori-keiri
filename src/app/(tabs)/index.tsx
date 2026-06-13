@@ -62,7 +62,10 @@ export default function HomeScreen() {
                 こんにちは、ゆうとさん
               </ThemedText>
             </View>
-            <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
+            <Pressable
+              accessibilityLabel="設定を開く"
+              style={styles.iconButton}
+              onPress={() => router.push('/settings')}>
               <AppIcon color={Palette.text} name="settings" size={19} />
             </Pressable>
           </View>
