@@ -16,10 +16,17 @@
 ### 2.1 オーナーがやること(これだけで動く)
 
 ```bash
+# 0. Supabase CLI(未インストールの場合)とプロジェクト紐づけ
+brew install supabase/tap/supabase
+supabase login                      # ブラウザで認証
+supabase link --project-ref <ref>   # ref はダッシュボードURLの英数字部分
+
 # 1. console.anthropic.com で API キー発行 + プリペイド入金(課金)
+
 # 2. シークレット設定とデプロイ(プロジェクトルートで)
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase functions deploy ocr-receipt
+
 # 3. アプリでサインインして撮影 → 実レシートで精度・コストを確認(§7)
 ```
 

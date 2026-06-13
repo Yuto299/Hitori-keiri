@@ -6,6 +6,8 @@
  * OCR はモック(playwright.config.ts で EXPO_PUBLIC_OCR_MOCK=1)。
  */
 
+import { readFileSync } from 'node:fs';
+
 import { expect, test } from '@playwright/test';
 
 test('初期状態: サンプル表示が明示され、0件ではCSVを書き出せない', async ({ page }) => {
@@ -74,6 +76,13 @@ test('コアフロー: 撮影→確認→保存→一覧→CSV出力→設定', 
   await page.getByText('CSVを書き出す', { exact: true }).last().click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.csv$/);
+
+  // ダウンロードされたCSVの中身を検証(ヘッダー + 保存したレシートの金額)
+  const csv = readFileSync((await download.path())!, 'utf-8');
+  expect(csv).toContain('日付');
+  expect(csv).toContain('勘定科目');
+  expect(csv).toContain('1234');
+
   await expect(page.getByText(/書き出しが完了しました/)).toBeVisible();
   await page.getByText('完了', { exact: true }).click();
 
@@ -82,4 +91,10 @@ test('コアフロー: 撮影→確認→保存→一覧→CSV出力→設定', 
   await expect(page.getByText('プラン切替(開発用)')).toBeVisible();
   await page.getByText('Light', { exact: true }).click();
   await expect(page.getByText('Lightプラン')).toBeVisible();
+
+  // --- ホーム(S-09): 保存が今月のサマリーに反映され、サンプル表示が消える ---
+  await page.getByRole('link', { name: 'ホーム' }).click();
+  // サマリー合計と最近のレシート行の両方に金額が出る
+  await expect(page.getByText('¥1,234').filter({ visible: true }).first()).toBeVisible();
+  await expect(page.getByText('サンプル').filter({ visible: true })).toHaveCount(0);
 });

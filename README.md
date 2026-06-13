@@ -27,6 +27,7 @@
 
 ```bash
 npm install
+cp .env.example .env.local   # Supabase の URL / anon key を記入(無くてもローカル限定で動く)
 npm run web
 ```
 
@@ -59,11 +60,27 @@ npx expo serve dist
 
 iOS/Android 実機は Development Build が必要(SDK 55 は Expo Go 非対応)。
 
+## テスト
+
+```bash
+npm run typecheck   # TypeScript 型チェック
+npm run lint        # ESLint
+npm test            # ロジック単体テスト(jest)
+npm run test:e2e    # Playwright E2E(Webサーバ自動起動・OCRモック・フェイクカメラ)
+```
+
+E2E はカメラ撮影 → OCR → 確認 → 保存 → 一覧 → CSVダウンロード → 設定の全フローと、
+全画面のボタン・ダイアログを実ブラウザで検証する。
+
 ## ステータス
 
-要件定義 v1.0 完了。**MVP実装中**(フェーズ1〜2 + CSV出力/設定/4タブ)。
-Webで「撮る→確認→保存→一覧→出力」のコアフローが動作(OCRはモック)。
-次: 認証・同期(Supabase)→ OCR本実装(Claude API)→ 課金。詳細は[ロードマップ](./docs/development/roadmap.md)。
+要件定義 v1.0 完了。**フェーズ4(OCR本実装)までコード側完了**。
+Webで「カメラ撮影→確認→保存→一覧→CSV出力」のコアフローが動作。認証・同期(Supabase)実装済み。
+
+実OCRを有効化するにはオーナー作業が1回だけ必要(Anthropic APIキー):
+→ [ocr-implementation.md §2.1](./docs/development/ocr-implementation.md)
+
+残り: 画像のStorage保存(FR-12)→ 課金(フェーズ6)→ Pro機能・仕上げ。詳細は[ロードマップ](./docs/development/roadmap.md)。
 
 ---
 
