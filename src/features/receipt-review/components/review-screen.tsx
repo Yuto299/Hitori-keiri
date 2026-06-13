@@ -8,7 +8,7 @@
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -20,6 +20,7 @@ import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
 import { canAddReceipt } from '@/features/billing/plan-access';
 import { countReceiptsInMonth } from '@/lib/db/receipt-repository';
 import { createReceiptSynced } from '@/lib/sync/receipt-sync';
+import { showAlert } from '@/shared/alert';
 import { useApp } from '@/shared/app-context';
 import type { CategoryId, OcrExtraction } from '@/shared/types/receipt';
 
@@ -58,14 +59,14 @@ export function ReviewScreen() {
 
   async function handleSave() {
     if (!date || !amount || !store) {
-      Alert.alert('入力を確認してください', '日付・金額・店名は必須です');
+      showAlert('入力を確認してください', '日付・金額・店名は必須です');
       return;
     }
     setSaving(true);
     try {
       const used = await countReceiptsInMonth(userId, currentYearMonth());
       if (!canAddReceipt(plan, used)) {
-        Alert.alert(
+        showAlert(
           '今月の上限に達しました',
           `${PLANS[plan].name} は月 ${PLANS[plan].features.monthlyReceiptLimit} 枚までです。アップグレードで増やせます。`,
         );
@@ -89,8 +90,17 @@ export function ReviewScreen() {
 
       router.replace('/explore'); // レシート一覧へ
     } catch {
-      Alert.alert('保存に失敗しました', 'もう一度お試しください');
+      showAlert('保存に失敗しました', 'もう一度お試しください');
       setSaving(false);
+    }
+  }
+
+  // 履歴がない(URL直叩き・リロード)場合はホームへ戻す
+  function goBack() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
     }
   }
 
@@ -101,7 +111,7 @@ export function ReviewScreen() {
           <Pressable
             accessibilityLabel="戻る"
             style={styles.backButton}
-            onPress={() => router.back()}>
+            onPress={goBack}>
             <AppIcon color={Palette.text} name="back" size={24} />
           </Pressable>
           <ThemedText style={styles.navTitle}>内容を確認</ThemedText>

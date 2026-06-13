@@ -52,6 +52,15 @@ export function CaptureScreen() {
 
   const canUseCamera = permission?.granted === true && cameraError === null;
 
+  // 履歴がない(URL直叩き・リロード)場合はホームへ戻す
+  function handleClose() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  }
+
   async function processImage(uri: string) {
     const extraction = await scan(uri);
     if (!extraction) return; // エラーは scanError 経由で表示
@@ -108,7 +117,7 @@ export function CaptureScreen() {
           <Pressable
             accessibilityLabel="閉じる"
             style={styles.closeButton}
-            onPress={() => router.back()}>
+            onPress={handleClose}>
             <AppIcon color="#ffffff" name="close" size={24} />
           </Pressable>
           <ThemedText style={styles.headerTitle}>レシートを撮影</ThemedText>

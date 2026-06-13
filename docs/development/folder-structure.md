@@ -109,6 +109,8 @@ export default ReceiptListScreen;
 - **import エイリアスは `@/`**(= `src/`)。相対パスの `../../../` を避ける。
 - **色・角丸はトークンを使う**(hex直書き禁止)。`@/constants/theme` の `Palette`(MVPはライト固定の静的参照用)/ `Brand` / `Radius` / `Spacing` を参照する。例外はイラスト・アバターのパステル等、意図的なワンオフ装飾のみ。
 - **押せるのに動かないUIを置かない**。未実装機能のボタン・タブは実装フェーズまで非表示にする。サンプルデータを見せる場合は必ず「サンプル」バッジで実データと区別する(`features/receipts/demo-receipts.ts`)。
+- **`Alert.alert` を直接呼ばない**。react-native-web では未実装(無反応)のため、`@/shared/alert` の `showAlert` / `confirmAsync` を使う(Web は window.alert / window.confirm に振り分け)。
+- **`router.back()` は `router.canGoBack()` でガード**する。URL直叩き・リロード(Web)では履歴がなく、戻る/閉じるボタンが無反応になるため、フォールバック先(`/` 等)へ `replace` する。
 
 ## 5. テスト・型・lint(MVPの最小)
 

@@ -8,7 +8,7 @@
 
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -23,6 +23,7 @@ import {
 } from '@/features/export/formatters';
 import { shareCsv } from '@/features/export/share-csv';
 import { listReceipts } from '@/lib/db/receipt-repository';
+import { showAlert } from '@/shared/alert';
 import { useApp } from '@/shared/app-context';
 
 export function ExportScreen() {
@@ -40,7 +41,7 @@ export function ExportScreen() {
 
   async function handleExport() {
     if (!canUseFormat(plan, selected)) {
-      Alert.alert(
+      showAlert(
         'この形式は Light 以上で使えます',
         `${PLANS[plan].name} は汎用CSVのみ。freee/マネフォ/弥生 形式は Light 以上にアップグレードで使えます。`,
       );
@@ -50,7 +51,7 @@ export function ExportScreen() {
     try {
       const receipts = await listReceipts(userId, 100000);
       if (receipts.length === 0) {
-        Alert.alert('レシートがありません', '撮影して保存すると書き出せます。');
+        showAlert('レシートがありません', '撮影して保存すると書き出せます。');
         return;
       }
       const formatter = ALL_FORMATTERS.find((f) => f.id === selected)!;
@@ -60,7 +61,7 @@ export function ExportScreen() {
       await shareCsv(fileName, content);
       setExportedFileName(fileName);
     } catch {
-      Alert.alert('書き出しに失敗しました', 'もう一度お試しください。');
+      showAlert('書き出しに失敗しました', 'もう一度お試しください。');
     } finally {
       setBusy(false);
     }

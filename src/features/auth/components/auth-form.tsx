@@ -8,12 +8,13 @@
  */
 
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
 import { signInWithEmail, signUpWithEmail } from '@/features/auth/hooks/use-auth';
 import { isSupabaseConfigured } from '@/lib/env';
+import { showAlert } from '@/shared/alert';
 
 type Mode = 'signin' | 'signup';
 
@@ -31,7 +32,7 @@ export function AuthForm({ onSuccess, onCancel }: Props) {
 
   async function handleSubmit() {
     if (!email || !password) {
-      Alert.alert('入力してください', 'メールアドレスとパスワードが必要です。');
+      showAlert('入力してください', 'メールアドレスとパスワードが必要です。');
       return;
     }
     setBusy(true);
@@ -40,7 +41,7 @@ export function AuthForm({ onSuccess, onCancel }: Props) {
         await signInWithEmail(email, password);
       } else {
         await signUpWithEmail(email, password);
-        Alert.alert(
+        showAlert(
           'サインアップしました',
           '確認メールが有効な設定の場合はメールを確認してください。',
         );
@@ -48,7 +49,7 @@ export function AuthForm({ onSuccess, onCancel }: Props) {
       onSuccess?.();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'エラーが発生しました';
-      Alert.alert('失敗しました', msg);
+      showAlert('失敗しました', msg);
     } finally {
       setBusy(false);
     }

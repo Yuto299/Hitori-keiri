@@ -8,15 +8,17 @@
 
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppIcon } from '@/components/app-icon';
 import { categoryName } from '@/constants/categories';
 import { Palette, Radius, Spacing } from '@/constants/theme';
 import { getReceipt } from '@/lib/db/receipt-repository';
 import { deleteReceiptSynced } from '@/lib/sync/receipt-sync';
+import { confirmAsync } from '@/shared/alert';
 import type { Receipt } from '@/shared/types/receipt';
 
 export function ReceiptDetailScreen() {
@@ -42,26 +44,41 @@ export function ReceiptDetailScreen() {
     }, [id]),
   );
 
-  function confirmDelete() {
-    if (!receipt) return;
-    Alert.alert('削除しますか?', 'このレシートを削除します。', [
-      { text: 'キャンセル', style: 'cancel' },
-      {
-        text: '削除',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteReceiptSynced(receipt.id);
-          router.back();
-        },
-      },
-    ]);
+  // 履歴がない(URL直叩き・リロード)場合は一覧へ戻す
+  function goBack() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/explore');
+    }
   }
+
+  async function confirmDelete() {
+    if (!receipt) return;
+    const ok = await confirmAsync('削除しますか?', 'このレシートを削除します。', '削除');
+    if (!ok) return;
+    await deleteReceiptSynced(receipt.id);
+    goBack();
+  }
+
+  const header = (
+    <View style={styles.nav}>
+      <Pressable accessibilityLabel="戻る" style={styles.backButton} onPress={goBack}>
+        <AppIcon color={Palette.text} name="back" size={24} />
+      </Pressable>
+      <ThemedText style={styles.navTitle}>レシート詳細</ThemedText>
+      <View style={styles.backButton} />
+    </View>
+  );
 
   if (loaded && !receipt) {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.centered}>
-          <ThemedText>レシートが見つかりません</ThemedText>
+        <SafeAreaView style={styles.safeArea}>
+          {header}
+          <View style={styles.centered}>
+            <ThemedText>レシートが見つかりません</ThemedText>
+          </View>
         </SafeAreaView>
       </ThemedView>
     );
@@ -70,6 +87,7 @@ export function ReceiptDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        {header}
         {receipt && (
           <View style={styles.body}>
             <View style={styles.imageBox}>
@@ -112,6 +130,20 @@ function Row({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Palette.backgroundScreen },
   safeArea: { flex: 1 },
+  nav: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  backButton: {
+    alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  navTitle: { fontWeight: '800' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: Spacing.four, gap: Spacing.three },
   imageBox: {
