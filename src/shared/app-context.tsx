@@ -9,7 +9,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import type { PlanId } from '@/config/plans';
+import { DEFAULT_PLAN, type PlanId } from '@/config/plans';
 import { useAuth, type AuthStatus } from '@/features/auth/hooks/use-auth';
 import { pullFromRemote } from '@/lib/sync/receipt-sync';
 
@@ -26,7 +26,8 @@ const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
-  const [plan, setPlan] = useState<PlanId>('light');
+  // 既定は Free(要件 1.7)。開発中の動作確認は設定画面のプラン切替を使う
+  const [plan, setPlan] = useState<PlanId>(DEFAULT_PLAN);
 
   // サインイン時に Supabase からレシートを取ってきてローカルにマージ
   useEffect(() => {

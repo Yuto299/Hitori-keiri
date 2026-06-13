@@ -29,6 +29,19 @@
     "plugins": [
       "expo-router",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "レシートを撮影するためにカメラを使用します。",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "レシート画像を取り込むために写真ライブラリを使用します。"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#2E9E63",

@@ -18,6 +18,11 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:8081',
     ...devices['Desktop Chrome'],
+    // カメラ撮影フローをテストするため、フェイクカメラデバイスを使う
+    permissions: ['camera'],
+    launchOptions: {
+      args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+    },
   },
   webServer: {
     command: 'npx expo start --web --port 8081',

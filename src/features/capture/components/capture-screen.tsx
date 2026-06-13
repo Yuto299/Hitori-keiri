@@ -1,63 +1,105 @@
 /**
  * 撮影画面(S-02)。
  *
- * MVP骨組みでは expo-image-picker でカメラ撮影/画像取込の両方を扱う
- * (Web/ネイティブ両対応・実装が簡潔)。リッチなカメラUI(expo-camera)は
- * フェーズ後半で差し替え可能。Free の画像削除バナー(FR-26)も表示する。
+ * expo-camera のライブプレビューで撮影(FR-01)し、ギャラリー取込(FR-02)にも対応。
+ * Free の画像削除バナー(FR-26)と今月の残り枚数(FR-22)を表示する。
+ * カメラが使えない環境(権限拒否・カメラ無しPC等)でも取込ボタンで完結できる。
+ * 連続撮影(FR-03)はフェーズ後半(docs/development/phase-7-polish.md §5)。
  */
 
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppIcon } from '@/components/app-icon';
-import { Brand, Spacing } from '@/constants/theme';
+import { PLANS } from '@/config/plans';
+import { Brand, Radius, Spacing } from '@/constants/theme';
+import { remainingReceipts } from '@/features/billing/plan-access';
 import { useReceiptScan } from '@/features/capture/hooks/use-receipt-scan';
+import { countReceiptsInMonth } from '@/lib/db/receipt-repository';
 import { useApp } from '@/shared/app-context';
 
 export function CaptureScreen() {
   const router = useRouter();
-  const { plan } = useApp();
-  const { loading, scan } = useReceiptScan();
+  const { plan, userId } = useApp();
+  const { loading, error: scanError, scan } = useReceiptScan();
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [remaining, setRemaining] = useState<number | null>(null);
 
-  async function handlePick(useCamera: boolean) {
-    setError(null);
-    try {
-      const picker = useCamera
-        ? ImagePicker.launchCameraAsync
-        : ImagePicker.launchImageLibraryAsync;
+  const monthlyLimit = PLANS[plan].features.monthlyReceiptLimit;
 
-      if (useCamera && Platform.OS !== 'web') {
-        const perm = await ImagePicker.requestCameraPermissionsAsync();
-        if (!perm.granted) {
-          setError('カメラの許可が必要です');
-          return;
-        }
-      }
-
-      const res = await picker({ quality: 0.7, base64: false });
-      if (res.canceled || !res.assets?.[0]) return;
-
-      const uri = res.assets[0].uri;
-      const extraction = await scan(uri);
-      if (!extraction) {
-        setError('読み取りに失敗しました');
+  // 今月の残り枚数(FR-22)。無制限プランでは表示しない
+  useFocusEffect(
+    useCallback(() => {
+      if (monthlyLimit === null) {
+        setRemaining(null);
         return;
       }
-      // 確認画面へ。抽出結果と画像URIを渡す
-      router.push({
-        pathname: '/review',
-        params: { imageUri: uri, extraction: JSON.stringify(extraction) },
+      countReceiptsInMonth(userId, new Date().toISOString().slice(0, 7)).then((used) => {
+        setRemaining(remainingReceipts(plan, used));
       });
+    }, [monthlyLimit, plan, userId]),
+  );
+
+  const canUseCamera = permission?.granted === true && cameraError === null;
+
+  async function processImage(uri: string) {
+    const extraction = await scan(uri);
+    if (!extraction) return; // エラーは scanError 経由で表示
+    router.push({
+      pathname: '/review',
+      params: { imageUri: uri, extraction: JSON.stringify(extraction) },
+    });
+  }
+
+  /**
+   * カメラ準備イベントの直後は映像フレームが届く前で撮影が失敗することがある
+   * (特にWeb)ため、短い間隔でリトライする。
+   */
+  async function takePictureWithRetry(): Promise<string | null> {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const photo = await cameraRef.current?.takePictureAsync({ quality: 0.7 });
+        if (photo?.uri) return photo.uri;
+      } catch (e) {
+        if (attempt === 2) console.warn('[capture] takePicture failed:', e);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    return null;
+  }
+
+  async function handleShutter() {
+    setError(null);
+    const uri = await takePictureWithRetry();
+    if (!uri) {
+      setError('撮影に失敗しました');
+      return;
+    }
+    await processImage(uri);
+  }
+
+  async function handlePickFromLibrary() {
+    setError(null);
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, base64: false });
+      if (res.canceled || !res.assets?.[0]) return;
+      await processImage(res.assets[0].uri);
     } catch {
       setError('画像の取得に失敗しました');
     }
   }
+
+  const displayError = error ?? scanError;
 
   return (
     <ThemedView style={styles.container}>
@@ -74,31 +116,65 @@ export function CaptureScreen() {
         </View>
 
         <View style={styles.viewfinder}>
+          {canUseCamera ? (
+            <CameraView
+              ref={cameraRef}
+              style={StyleSheet.absoluteFill}
+              facing="back"
+              onCameraReady={() => setCameraReady(true)}
+              onMountError={(e) => setCameraError(e.message)}
+            />
+          ) : (
+            <View style={styles.cameraFallback}>
+              {permission == null ? null : cameraError !== null ? (
+                <>
+                  <ThemedText style={styles.fallbackTitle}>
+                    カメラを起動できませんでした
+                  </ThemedText>
+                  <ThemedText type="small" style={styles.fallbackText}>
+                    下の取込ボタンから画像を選んで登録できます
+                  </ThemedText>
+                </>
+              ) : (
+                <>
+                  <ThemedText style={styles.fallbackTitle}>カメラの許可が必要です</ThemedText>
+                  {permission.canAskAgain ? (
+                    <Pressable style={styles.permissionButton} onPress={requestPermission}>
+                      <ThemedText style={styles.permissionButtonText}>
+                        カメラを許可する
+                      </ThemedText>
+                    </Pressable>
+                  ) : (
+                    <ThemedText type="small" style={styles.fallbackText}>
+                      端末の設定アプリからカメラを許可してください
+                    </ThemedText>
+                  )}
+                  <ThemedText type="small" style={styles.fallbackText}>
+                    許可しない場合も、下の取込ボタンから画像を選べます
+                  </ThemedText>
+                </>
+              )}
+            </View>
+          )}
+
           <View style={[styles.corner, styles.cornerTopLeft]} />
           <View style={[styles.corner, styles.cornerTopRight]} />
           <View style={[styles.corner, styles.cornerBottomLeft]} />
           <View style={[styles.corner, styles.cornerBottomRight]} />
 
-          <View style={styles.receiptPreview}>
-            <View style={styles.receiptTopEdge} />
-            <ThemedText style={styles.previewStore}>FamilyMart</ThemedText>
-            <ThemedText type="small" style={styles.previewLabel}>
-              領　収　証
-            </ThemedText>
-            <ThemedText type="small" style={styles.previewLine}>
-              2026年05月25日（月）16:32
-            </ThemedText>
-            <View style={styles.previewItems}>
-              <PreviewLine name="おにぎり 鮭" amount="¥150" />
-              <PreviewLine name="お茶 600ml" amount="¥130" />
+          {remaining !== null && (
+            <View style={styles.remainingBadge}>
+              <ThemedText type="small" style={styles.remainingText}>
+                今月の残り枚数:あと {remaining} 枚
+              </ThemedText>
             </View>
-            <View style={styles.totalRow}>
-              <ThemedText style={styles.totalLabel}>合計</ThemedText>
-              <ThemedText style={styles.totalAmount}>¥280</ThemedText>
+          )}
+
+          {loading && (
+            <View style={styles.scanOverlay}>
+              <ThemedText style={styles.scanText}>読み取り中…</ThemedText>
             </View>
-            <View style={styles.barcode} />
-            <ThemedText type="small" style={styles.previewNumber}>No.1234-5678-9012</ThemedText>
-          </View>
+          )}
         </View>
 
         {plan === 'free' && (
@@ -109,9 +185,9 @@ export function CaptureScreen() {
           </View>
         )}
 
-        {error && (
+        {displayError && (
           <ThemedText type="small" style={styles.error}>
-            {error}
+            {displayError}
           </ThemedText>
         )}
 
@@ -120,42 +196,29 @@ export function CaptureScreen() {
             accessibilityLabel="ギャラリーから選択"
             style={[styles.toolButton, loading && styles.disabled]}
             disabled={loading}
-            onPress={() => handlePick(false)}>
+            onPress={handlePickFromLibrary}>
             <AppIcon color="#ffffff" name="gallery" size={22} />
           </Pressable>
 
           <Pressable
             accessibilityLabel="撮影する"
-            style={[styles.shutterOuter, loading && styles.disabled]}
-            disabled={loading}
-            onPress={() => handlePick(true)}>
-            <View style={styles.shutterInner}>
-              <ThemedText style={styles.shutterText}>{loading ? '…' : ''}</ThemedText>
-            </View>
+            style={[
+              styles.shutterOuter,
+              (loading || !canUseCamera || !cameraReady) && styles.disabled,
+            ]}
+            disabled={loading || !canUseCamera || !cameraReady}
+            onPress={handleShutter}>
+            <View style={styles.shutterInner} />
           </Pressable>
 
-          <Pressable
-            accessibilityLabel="画像を取り込む"
-            style={[styles.toolButton, loading && styles.disabled]}
-            disabled={loading}
-            onPress={() => handlePick(false)}>
-            <AppIcon color="#ffffff" name="receipt" size={22} />
-          </Pressable>
+          <View style={styles.toolSpacer} />
         </View>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-function PreviewLine({ name, amount }: { name: string; amount: string }) {
-  return (
-    <View style={styles.previewItemRow}>
-      <ThemedText type="small">{name}</ThemedText>
-      <ThemedText type="small">{amount}</ThemedText>
-    </View>
-  );
-}
-
+// 撮影画面のみ意図的なダークUI(カメラ画面の慣習)。ライトテーマのトークンは使わない
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121512' },
   safeArea: { flex: 1, paddingHorizontal: Spacing.three },
@@ -174,14 +237,29 @@ const styles = StyleSheet.create({
   },
   headerTitle: { color: '#ffffff', fontWeight: '700' },
   viewfinder: {
-    alignItems: 'center',
-    backgroundColor: '#B88B55',
-    borderRadius: Spacing.three,
+    backgroundColor: '#0E1411',
+    borderRadius: Radius.lg,
     flex: 1,
-    justifyContent: 'center',
     marginBottom: Spacing.three,
     overflow: 'hidden',
   },
+  cameraFallback: {
+    alignItems: 'center',
+    flex: 1,
+    gap: Spacing.two,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.four,
+  },
+  fallbackTitle: { color: '#ffffff', fontWeight: '700', textAlign: 'center' },
+  fallbackText: { color: '#A7B0AB', textAlign: 'center' },
+  permissionButton: {
+    backgroundColor: Brand.primary,
+    borderRadius: Radius.md,
+    marginVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+  },
+  permissionButtonText: { color: '#ffffff', fontWeight: '700' },
   corner: {
     borderColor: '#52C987',
     height: 44,
@@ -203,55 +281,34 @@ const styles = StyleSheet.create({
     bottom: Spacing.three,
     right: Spacing.three,
   },
-  receiptPreview: {
-    backgroundColor: '#FAFAF8',
-    elevation: 6,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.five,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.24,
-    shadowRadius: 18,
-    width: '70%',
-  },
-  receiptTopEdge: {
-    backgroundColor: '#F0F0EC',
-    height: 6,
-    left: 0,
+  remainingBadge: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    borderRadius: Radius.sm,
+    bottom: Spacing.four,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
     position: 'absolute',
-    right: 0,
-    top: 0,
+    zIndex: 2,
   },
-  previewStore: { fontSize: 28, fontWeight: '800', textAlign: 'center' },
-  previewLabel: { marginTop: Spacing.two, textAlign: 'center' },
-  previewLine: { marginTop: Spacing.three, textAlign: 'center' },
-  previewItems: { gap: Spacing.one, marginTop: Spacing.three },
-  previewItemRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  totalRow: {
-    borderTopColor: '#D7D7D3',
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: Spacing.three,
-    paddingTop: Spacing.two,
+  remainingText: { color: '#ffffff' },
+  scanOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    zIndex: 3,
   },
-  totalLabel: { fontWeight: '700' },
-  totalAmount: { fontSize: 18, fontWeight: '800' },
-  barcode: {
-    backgroundColor: '#111111',
-    height: 18,
-    marginTop: Spacing.four,
-    opacity: 0.86,
-  },
-  previewNumber: { marginTop: Spacing.one, opacity: 0.62, textAlign: 'center' },
+  scanText: { color: '#ffffff', fontWeight: '700' },
   banner: {
     backgroundColor: Brand.warningBackground,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.md,
     marginBottom: Spacing.two,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
   },
   bannerText: { color: Brand.warningText },
+  error: { color: '#FFB4A8', marginBottom: Spacing.two, textAlign: 'center' },
   actions: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -267,6 +324,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 44,
   },
+  toolSpacer: { height: 44, width: 44 },
   shutterOuter: {
     alignItems: 'center',
     borderColor: '#ffffff',
@@ -281,14 +339,10 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
   },
   shutterInner: {
-    alignItems: 'center',
     backgroundColor: Brand.primary,
     borderRadius: 31,
     height: 62,
-    justifyContent: 'center',
     width: 62,
   },
-  shutterText: { color: '#ffffff', fontSize: 24, fontWeight: '700' },
   disabled: { opacity: 0.5 },
-  error: { color: '#FFB4A8', marginBottom: Spacing.two, textAlign: 'center' },
 });
