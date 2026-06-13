@@ -4,6 +4,7 @@
 
 | ドキュメント | 内容 |
 |---|---|
+| **[todo.md](./todo.md)** | **やることリスト(オーナー作業・残実装・ストア準備)** |
 | [tech-stack.md](./tech-stack.md) | 技術スタック選定と根拠(Expo SDK 55 / Supabase / Claude API) |
 | [folder-structure.md](./folder-structure.md) | feature-based のフォルダ構成と設計意図 |
 | [roadmap.md](./roadmap.md) | 実装ロードマップ(フェーズ・タスク・進捗ログ) |
