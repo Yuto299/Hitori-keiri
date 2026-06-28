@@ -1,22 +1,37 @@
 /**
  * OCR Edge Function(フェーズ4・FR-04/05/22)
  *
- * レシート画像(base64)を受け取り、Claude API(Vision + Structured Outputs)で
+ * レシート画像(base64)を受け取り、Vision + Structured Outputs で
  * 日付・金額・店名・勘定科目候補を抽出して返す。
  *
- * - ANTHROPIC_API_KEY はこの関数のシークレットのみ(クライアントに置かない)
+ * プロバイダーは切替式(secrets の OCR_PROVIDER で選ぶ):
+ *   - 'anthropic'(既定): Claude API。キーは ANTHROPIC_API_KEY
+ *   - 'openai'         : OpenAI API。 キーは OPENAI_API_KEY
+ *   どちらでもクライアント側は無改修(この関数が同じ形に正規化して返す)。
+ *
+ * - APIキーはこの関数のシークレットのみ(クライアントに置かない)
  * - 認証必須(Supabase JWT)。枚数上限(FR-22)もサーバ側でチェックする
  * - デプロイ: `supabase functions deploy ocr-receipt`
- *   シークレット: `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`
+ *   例(OpenAI): `supabase secrets set OCR_PROVIDER=openai OPENAI_API_KEY=sk-...`
+ *   例(Claude): `supabase secrets set OCR_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-ant-...`
  *
  * ※ Deno ランタイム。tsconfig / eslint の対象外(アプリ側とは別世界)。
  */
 
 import Anthropic from 'npm:@anthropic-ai/sdk';
+import OpenAI from 'npm:openai';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-/** コスト優先で Haiku から開始(第6章 6.3.3)。精度不足なら secrets で上位モデルに切替 */
-const MODEL = Deno.env.get('OCR_MODEL') ?? 'claude-haiku-4-5';
+type Provider = 'anthropic' | 'openai';
+
+const PROVIDER = ((Deno.env.get('OCR_PROVIDER') ?? 'anthropic').toLowerCase()) as Provider;
+
+/** プロバイダー別の既定モデル。OCR_MODEL を設定すればそちらが優先される */
+const DEFAULT_MODEL: Record<Provider, string> = {
+  anthropic: 'claude-haiku-4-5', // コスト優先(第6章 6.3.3)
+  openai: 'gpt-4o-mini', // コスト優先。精度優先なら gpt-4o
+};
+const MODEL = Deno.env.get('OCR_MODEL') ?? DEFAULT_MODEL[PROVIDER];
 
 /** src/constants/categories.ts と同期すること */
 const CATEGORY_IDS = [
@@ -41,8 +56,29 @@ const MONTHLY_LIMITS: Record<string, number | null> = {
   pro: null,
 };
 
-/** 抽出スキーマ(第6章 6.3.2)。Structured Outputs で JSON を強制する */
-const EXTRACTION_SCHEMA = {
+/** 抽出結果の生形(プロバイダー共通) */
+interface RawExtraction {
+  date: string | null;
+  amount_yen: number | null;
+  store: string | null;
+  category_candidates: string[];
+  confidence: { date: number; amount: number; store: number };
+}
+
+/** confidence オブジェクトの共通スキーマ片 */
+const CONFIDENCE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['date', 'amount', 'store'],
+  properties: {
+    date: { type: 'number' },
+    amount: { type: 'number' },
+    store: { type: 'number' },
+  },
+};
+
+/** Anthropic 用スキーマ(nullable は anyOf) */
+const ANTHROPIC_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   required: ['date', 'amount_yen', 'store', 'category_candidates', 'confidence'],
@@ -50,20 +86,22 @@ const EXTRACTION_SCHEMA = {
     date: { anyOf: [{ type: 'string' }, { type: 'null' }] },
     amount_yen: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
     store: { anyOf: [{ type: 'string' }, { type: 'null' }] },
-    category_candidates: {
-      type: 'array',
-      items: { type: 'string', enum: CATEGORY_IDS },
-    },
-    confidence: {
-      type: 'object',
-      additionalProperties: false,
-      required: ['date', 'amount', 'store'],
-      properties: {
-        date: { type: 'number' },
-        amount: { type: 'number' },
-        store: { type: 'number' },
-      },
-    },
+    category_candidates: { type: 'array', items: { type: 'string', enum: CATEGORY_IDS } },
+    confidence: CONFIDENCE_SCHEMA,
+  },
+};
+
+/** OpenAI strict 用スキーマ(nullable は型配列。全フィールド required・additionalProperties:false) */
+const OPENAI_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['date', 'amount_yen', 'store', 'category_candidates', 'confidence'],
+  properties: {
+    date: { type: ['string', 'null'] },
+    amount_yen: { type: ['integer', 'null'] },
+    store: { type: ['string', 'null'] },
+    category_candidates: { type: 'array', items: { type: 'string', enum: CATEGORY_IDS } },
+    confidence: CONFIDENCE_SCHEMA,
   },
 };
 
@@ -94,6 +132,74 @@ const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 /** base64 で約 9MB(元画像 ~6.7MB)まで。クライアントはリサイズ済みのはず */
 const MAX_BASE64_LENGTH = 9_000_000;
 
+class OcrError extends Error {}
+
+/** Claude API で抽出(画像はテキストより前に置く= 公式推奨) */
+async function extractWithAnthropic(
+  apiKey: string,
+  imageBase64: string,
+  mediaType: string,
+): Promise<RawExtraction> {
+  const anthropic = new Anthropic({ apiKey });
+  const result = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 1024,
+    output_config: { format: { type: 'json_schema', schema: ANTHROPIC_SCHEMA } },
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
+          { type: 'text', text: PROMPT },
+        ],
+      },
+    ],
+  });
+  if (result.stop_reason !== 'end_turn') {
+    throw new OcrError(`anthropic stop_reason=${result.stop_reason}`);
+  }
+  const textBlock = result.content.find((b: { type: string }) => b.type === 'text');
+  if (!textBlock?.text) throw new OcrError('anthropic empty content');
+  return JSON.parse(textBlock.text) as RawExtraction;
+}
+
+/** OpenAI Chat Completions(Vision + Structured Outputs strict) */
+async function extractWithOpenAI(
+  apiKey: string,
+  imageBase64: string,
+  mediaType: string,
+): Promise<RawExtraction> {
+  const openai = new OpenAI({ apiKey });
+  const completion = await openai.chat.completions.create({
+    model: MODEL,
+    max_tokens: 1024,
+    response_format: {
+      type: 'json_schema',
+      json_schema: { name: 'receipt_extraction', strict: true, schema: OPENAI_SCHEMA },
+    },
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: PROMPT },
+          {
+            type: 'image_url',
+            image_url: { url: `data:${mediaType};base64,${imageBase64}` },
+          },
+        ],
+      },
+    ],
+  });
+  const choice = completion.choices[0];
+  if (choice?.message?.refusal) throw new OcrError(`openai refusal: ${choice.message.refusal}`);
+  if (choice?.finish_reason !== 'stop') {
+    throw new OcrError(`openai finish_reason=${choice?.finish_reason}`);
+  }
+  const text = choice.message?.content;
+  if (!text) throw new OcrError('openai empty content');
+  return JSON.parse(text) as RawExtraction;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
@@ -102,11 +208,12 @@ Deno.serve(async (req) => {
     return jsonResponse(405, { error: 'method_not_allowed' });
   }
 
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  const apiKey = Deno.env.get(PROVIDER === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY');
   if (!apiKey) {
+    const keyName = PROVIDER === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY';
     return jsonResponse(500, {
       error: 'not_configured',
-      message: 'サーバのOCR設定が未完了です(ANTHROPIC_API_KEY 未設定)',
+      message: `サーバのOCR設定が未完了です(${keyName} 未設定)`,
     });
   }
 
@@ -171,60 +278,34 @@ Deno.serve(async (req) => {
     return jsonResponse(400, { error: 'invalid_media_type' });
   }
 
-  // --- Claude API(Vision + Structured Outputs) ---
-  const anthropic = new Anthropic({ apiKey });
-  let result;
+  // --- 抽出(プロバイダー切替) ---
+  let raw: RawExtraction;
   try {
-    result = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      output_config: { format: { type: 'json_schema', schema: EXTRACTION_SCHEMA } },
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: imageBase64 },
-            },
-            { type: 'text', text: PROMPT },
-          ],
-        },
-      ],
-    });
+    raw =
+      PROVIDER === 'openai'
+        ? await extractWithOpenAI(apiKey, imageBase64, mediaType)
+        : await extractWithAnthropic(apiKey, imageBase64, mediaType);
   } catch (e) {
-    console.error('anthropic error', e);
+    console.error(`[ocr] ${PROVIDER} error`, e);
     return jsonResponse(502, {
       error: 'ocr_failed',
       message: '読み取りに失敗しました。もう一度お試しください',
     });
   }
 
-  if (result.stop_reason !== 'end_turn') {
-    console.error('unexpected stop_reason', result.stop_reason);
-    return jsonResponse(502, { error: 'ocr_failed', message: '読み取りに失敗しました' });
-  }
-
   // --- 応答の正規化(クライアントの OcrExtraction 形式) ---
-  try {
-    const textBlock = result.content.find((b: { type: string }) => b.type === 'text');
-    const raw = JSON.parse(textBlock.text);
-    const confidence = raw.confidence ?? {};
-    return jsonResponse(200, {
-      date: typeof raw.date === 'string' ? raw.date : null,
-      amountYen: Number.isInteger(raw.amount_yen) ? raw.amount_yen : null,
-      store: typeof raw.store === 'string' ? raw.store : null,
-      categoryCandidates: Array.isArray(raw.category_candidates)
-        ? raw.category_candidates.filter((id: unknown) => CATEGORY_IDS.includes(id as string)).slice(0, 3)
-        : [],
-      confidence: {
-        date: typeof confidence.date === 'number' ? confidence.date : 0,
-        amount: typeof confidence.amount === 'number' ? confidence.amount : 0,
-        store: typeof confidence.store === 'number' ? confidence.store : 0,
-      },
-    });
-  } catch (e) {
-    console.error('parse error', e);
-    return jsonResponse(502, { error: 'ocr_failed', message: '読み取り結果の解析に失敗しました' });
-  }
+  const confidence = raw.confidence ?? ({} as RawExtraction['confidence']);
+  return jsonResponse(200, {
+    date: typeof raw.date === 'string' ? raw.date : null,
+    amountYen: Number.isInteger(raw.amount_yen) ? raw.amount_yen : null,
+    store: typeof raw.store === 'string' ? raw.store : null,
+    categoryCandidates: Array.isArray(raw.category_candidates)
+      ? raw.category_candidates.filter((id) => CATEGORY_IDS.includes(id)).slice(0, 3)
+      : [],
+    confidence: {
+      date: typeof confidence.date === 'number' ? confidence.date : 0,
+      amount: typeof confidence.amount === 'number' ? confidence.amount : 0,
+      store: typeof confidence.store === 'number' ? confidence.store : 0,
+    },
+  });
 });

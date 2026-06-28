@@ -1,4 +1,4 @@
-# OCR 本実装(Claude API)
+# OCR 本実装(Claude / OpenAI 切替式)
 
 > 関連: 要件 [第6章 OCR / AI学習](../requirements/06-ocr-ai.md) / [tech-stack.md](./tech-stack.md)
 > ステータス: **実装済み(コード側完了)**。残りはオーナー作業のみ(下記 §2.1)
@@ -8,10 +8,21 @@
 
 | 部品 | ファイル | 内容 |
 |---|---|---|
-| Edge Function | [supabase/functions/ocr-receipt/index.ts](../../supabase/functions/ocr-receipt/index.ts) | JWT認証 → 枚数上限チェック(FR-22・サーバ側が正)→ Claude API(Vision + Structured Outputs)→ OcrExtraction を返す |
+| Edge Function | [supabase/functions/ocr-receipt/index.ts](../../supabase/functions/ocr-receipt/index.ts) | JWT認証 → 枚数上限チェック(FR-22・サーバ側が正)→ **AI(Vision + Structured Outputs)→** OcrExtraction を返す |
 | クライアント | [src/features/capture/api/ocr-service.claude.ts](../../src/features/capture/api/ocr-service.claude.ts) | expo-image-manipulator で幅1280px・JPEG(0.8)に縮小 → base64 → Edge Function を fetch |
-| 切替 | [src/features/capture/api/index.ts](../../src/features/capture/api/index.ts) | Supabase 設定済みなら Claude、未設定 or `EXPO_PUBLIC_OCR_MOCK=1` ならモック |
-| モデル | 既定 `claude-haiku-4-5`(コスト優先・第6章 6.3.3) | `supabase secrets set OCR_MODEL=...` で差し替え可能(再デプロイ不要) |
+| 切替 | [src/features/capture/api/index.ts](../../src/features/capture/api/index.ts) | Supabase 設定済みなら実OCR、未設定 or `EXPO_PUBLIC_OCR_MOCK=1` ならモック |
+
+### プロバイダー切替(OpenAI / Anthropic)
+
+OCR の AI プロバイダーは **secrets で切替可能**(クライアントは無改修)。要件の確定スタックは
+Claude だが、開発段階で OpenAI のクレジットを使う等のためにスイッチ式にしてある。
+
+| `OCR_PROVIDER` | キー | 既定モデル | 備考 |
+|---|---|---|---|
+| `anthropic`(既定) | `ANTHROPIC_API_KEY` | `claude-haiku-4-5` | 要件の確定スタック |
+| `openai` | `OPENAI_API_KEY` | `gpt-4o-mini` | コスト安・OCR十分。精度優先は `gpt-4o` |
+
+`OCR_MODEL` を設定すると、アクティブなプロバイダーの既定モデルを上書きできる(再デプロイ不要)。
 
 ### 2.1 オーナーがやること(これだけで動く)
 
@@ -21,14 +32,24 @@ brew install supabase/tap/supabase
 supabase login                      # ブラウザで認証
 supabase link --project-ref <ref>   # ref はダッシュボードURLの英数字部分
 
-# 1. console.anthropic.com で API キー発行 + プリペイド入金(課金)
+# 1. APIキーを用意(課金。どちらか一方でよい)
+#    OpenAI : platform.openai.com でキー発行(残クレジットを使う場合はこちら)
+#    Claude : console.anthropic.com でキー発行 + プリペイド入金
 
 # 2. シークレット設定とデプロイ(プロジェクトルートで)
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+# --- OpenAI を使う場合 ---
+supabase secrets set OCR_PROVIDER=openai OPENAI_API_KEY=sk-...
+supabase functions deploy ocr-receipt
+# --- Claude を使う場合 ---
+supabase secrets set OCR_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-ant-...
 supabase functions deploy ocr-receipt
 
 # 3. アプリでサインインして撮影 → 実レシートで精度・コストを確認(§7)
 ```
+
+切替時の注意: `OCR_PROVIDER` を変えたら、対応するキーも設定済みか確認する
+(未設定だと「サーバのOCR設定が未完了です(○○_API_KEY 未設定)」を返す)。
+本番化のタイミングで Claude に戻すなら `supabase secrets set OCR_PROVIDER=anthropic` だけでよい。
 
 注意: OCR は認証必須(枚数カウントをユーザーに紐づけるため)。未サインインだと
 「OCRを使うには、設定画面からサインインしてください」と案内される。

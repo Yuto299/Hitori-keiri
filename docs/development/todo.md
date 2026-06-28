@@ -22,20 +22,25 @@ cp .env.example .env.local
 
 ### 1.2 実OCRの有効化(1回だけ・課金が発生)
 
-手順詳細: [ocr-implementation.md §2.1](./ocr-implementation.md)
+OCRプロバイダーは切替式(OpenAI / Claude)。手順詳細: [ocr-implementation.md §2.1](./ocr-implementation.md)
 
 ```bash
 brew install supabase/tap/supabase
 supabase login
 supabase link --project-ref <ref>     # ダッシュボードURLの英数字部分
 
-# console.anthropic.com でAPIキー発行 + プリペイド入金
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+# OpenAI を使う場合(残クレジット消化。既定モデル gpt-4o-mini)
+supabase secrets set OCR_PROVIDER=openai OPENAI_API_KEY=sk-...
 supabase functions deploy ocr-receipt
+
+# Claude を使う場合(既定モデル claude-haiku-4-5)
+#   supabase secrets set OCR_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-ant-...
+#   supabase functions deploy ocr-receipt
 ```
 
 - [ ] デプロイ後、実レシート10枚で精度とコストを実測(→ 要件 第8章の前提 ¥0.8/枚 を実値で更新)
-- [ ] 精度が不足する場合: `supabase secrets set OCR_MODEL=claude-sonnet-4-6` で上位モデルに切替(再デプロイ不要)
+- [ ] 精度が不足する場合: `supabase secrets set OCR_MODEL=gpt-4o`(OpenAI)/ `=claude-sonnet-4-6`(Claude)で上位モデルに切替(再デプロイ不要)
+- [ ] 本番化時に Claude に戻すなら `OCR_PROVIDER=anthropic` に変えるだけ(コード変更不要)
 
 ### 1.3 iPhone実機での確認(EAS = 外部サービス登録)
 
