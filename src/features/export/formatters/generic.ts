@@ -8,7 +8,7 @@
 import { categoryName } from '@/constants/categories';
 import type { Receipt } from '@/shared/types/receipt';
 
-import { joinCsv, toCsvDate, toRow } from './csv-utils';
+import { csvFileName, joinCsv, toCsvDate, toRow } from './csv-utils';
 import type { CsvFormatter } from './types';
 
 const HEADER = ['日付', '金額', '店名', '勘定科目', 'メモ', '同席者', '目的', '案件名'];
@@ -34,7 +34,7 @@ export const genericFormatter: CsvFormatter = {
     }
     return joinCsv(lines);
   },
-  fileName({ year }) {
-    return year ? `${year}_receipts_generic.csv` : 'receipts_generic.csv';
+  fileName({ periodTag }) {
+    return csvFileName('generic', periodTag);
   },
 };

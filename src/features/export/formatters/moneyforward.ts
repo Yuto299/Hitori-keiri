@@ -9,7 +9,7 @@
 import { categoryName } from '@/constants/categories';
 import type { Receipt } from '@/shared/types/receipt';
 
-import { buildSummary, joinCsv, toCsvDate, toRow } from './csv-utils';
+import { buildSummary, csvFileName, joinCsv, toCsvDate, toRow } from './csv-utils';
 import type { CsvFormatter } from './types';
 
 // TODO(実装着手): マネーフォワードの正式なインポート列に合わせる
@@ -33,7 +33,7 @@ export const moneyforwardFormatter: CsvFormatter = {
     }
     return joinCsv(lines);
   },
-  fileName({ year }) {
-    return year ? `${year}_receipts_moneyforward.csv` : 'receipts_moneyforward.csv';
+  fileName({ periodTag }) {
+    return csvFileName('moneyforward', periodTag);
   },
 };

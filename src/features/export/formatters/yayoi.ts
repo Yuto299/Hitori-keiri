@@ -10,7 +10,7 @@
 import { categoryName } from '@/constants/categories';
 import type { Receipt } from '@/shared/types/receipt';
 
-import { buildSummary, joinCsv, toCsvDate, toRow } from './csv-utils';
+import { buildSummary, csvFileName, joinCsv, toCsvDate, toRow } from './csv-utils';
 import type { CsvFormatter } from './types';
 
 // TODO(実装着手): 弥生の正式な仕訳データ取込列に合わせる(+ Shift_JIS 検討)
@@ -33,7 +33,7 @@ export const yayoiFormatter: CsvFormatter = {
     }
     return joinCsv(lines);
   },
-  fileName({ year }) {
-    return year ? `${year}_receipts_yayoi.csv` : 'receipts_yayoi.csv';
+  fileName({ periodTag }) {
+    return csvFileName('yayoi', periodTag);
   },
 };

@@ -17,6 +17,10 @@ export interface CsvFormatter {
   label: string;
   /** Receipt 配列を CSV 文字列へ */
   format(receipts: Receipt[]): string;
-  /** 出力ファイル名(例: 2025_receipts_freee.csv) */
-  fileName(opts: { year?: number }): string;
+  /**
+   * 出力ファイル名。periodTag は期間指定(FR-19)由来のタグ
+   * (例: '2025' → 2025_receipts_freee.csv、'2026-05' → 2026-05_receipts_freee.csv)。
+   * 未指定(全期間)なら receipts_freee.csv。
+   */
+  fileName(opts: { periodTag?: string }): string;
 }

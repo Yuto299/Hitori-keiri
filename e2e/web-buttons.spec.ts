@@ -137,6 +137,41 @@ test('課金壁: Freeで各社形式を選ぶとアップグレード画面(S-07
   expect(download.suggestedFilename()).toContain('freee');
 });
 
+test('出力: 期間指定(年/月/任意範囲)で対象件数が変わり、ファイル名に期間が入る', async ({ page }) => {
+  await gotoHome(page);
+  await addReceipt(page, '6666'); // モックOCRの日付は今日
+
+  await page.getByRole('link', { name: '出力' }).click();
+  await expect(page.getByText(/対象: 1 件/)).toBeVisible();
+
+  // 年: 今年は1件、前の年は0件(書き出せない)
+  await page.getByLabel('期間: 年').click();
+  await expect(page.getByText(/対象: 1 件/)).toBeVisible();
+  await page.getByLabel('前の年').click();
+  await expect(page.getByText(/対象: 0 件/)).toBeVisible();
+  await expect(page.getByText(/に該当するレシートがありません/)).toBeVisible();
+  await page.getByLabel('次の年').click();
+
+  // 月: 今月は1件
+  await page.getByLabel('期間: 月').click();
+  await expect(page.getByText(/対象: 1 件/)).toBeVisible();
+
+  // 任意範囲: 不正な入力では書き出せない。正しい範囲なら書き出せてファイル名に期間が入る
+  await page.getByLabel('期間: 期間指定').click();
+  await page.getByLabel('開始日').fill('2099-01-01');
+  await page.getByLabel('終了日').fill('2000-01-01');
+  await expect(page.getByText(/開始日 ≦ 終了日/)).toBeVisible();
+  await page.getByLabel('開始日').fill('2000-01-01');
+  await page.getByLabel('終了日').fill('2099-12-31');
+  await expect(page.getByText(/対象: 1 件/)).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByText('CSVを書き出す', { exact: true }).last().click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('2000-01-01_2099-12-31_receipts_generic.csv');
+  await expect(page.getByText(/2000-01-01〜2099-12-31/)).toBeVisible();
+});
+
 test('一覧: 検索は Pro 限定。Free はタップで課金壁、Pro に切替後は絞り込める', async ({ page }) => {
   await gotoHome(page);
   await page.getByRole('link', { name: 'レシート' }).click();

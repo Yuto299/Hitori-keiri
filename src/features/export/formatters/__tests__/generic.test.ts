@@ -42,7 +42,7 @@ describe('genericFormatter(汎用CSV FR-15)', () => {
   });
 
   test('ファイル名は年つき/なしを切り替える', () => {
-    expect(genericFormatter.fileName({ year: 2025 })).toBe(
+    expect(genericFormatter.fileName({ periodTag: '2025' })).toBe(
       '2025_receipts_generic.csv',
     );
     expect(genericFormatter.fileName({})).toBe('receipts_generic.csv');

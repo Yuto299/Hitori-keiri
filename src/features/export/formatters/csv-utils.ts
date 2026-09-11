@@ -43,3 +43,8 @@ export function buildSummary(receipt: Receipt): string {
 export function joinCsv(lines: string[]): string {
   return lines.join('\r\n');
 }
+
+/** 形式共通のファイル名規則: <期間タグ>_receipts_<形式>.csv(全期間はタグなし) */
+export function csvFileName(formatId: string, periodTag?: string): string {
+  return periodTag ? `${periodTag}_receipts_${formatId}.csv` : `receipts_${formatId}.csv`;
+}
