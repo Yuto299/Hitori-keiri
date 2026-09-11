@@ -12,7 +12,7 @@ import { AppProvider } from '@/shared/app-context';
  *
  * 構成:
  * - (tabs)/ グループ ... ホーム/レシート/出力/設定 の4タブ(下部ナビあり)
- * - capture / review / receipt/[id] ... タブ外スタック(タブを覆って表示)
+ * - capture / review / receipt/[id] / upgrade ... タブ外スタック(タブを覆って表示)
  *
  * これにより router.push('/capture') 等でタブ外画面へ自由に遷移できる。
  */
@@ -27,6 +27,7 @@ export default function RootLayout() {
             <Stack.Screen name="capture" />
             <Stack.Screen name="review" />
             <Stack.Screen name="receipt/[id]" />
+            <Stack.Screen name="upgrade" />
           </Stack>
         </ThemeProvider>
       </AppProvider>

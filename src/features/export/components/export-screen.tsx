@@ -2,11 +2,10 @@
  * CSV出力画面(S-06)。
  *
  * 形式(汎用/freee/マネフォ/弥生)を選び、対象レシートを書き出して共有する。
- * 各社形式は Light/Pro 限定(FR-16〜18)。Free が選ぶとアップグレード案内(課金壁)。
- * 期間指定(FR-19)は MVP では「全期間 / 年」を簡易対応。
+ * 各社形式は Light/Pro 限定(FR-16〜18)。Free が選ぶとアップグレード画面 S-07 へ(課金壁)。
  */
 
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +26,7 @@ import { showAlert } from '@/shared/alert';
 import { useApp } from '@/shared/app-context';
 
 export function ExportScreen() {
+  const router = useRouter();
   const { plan, userId } = useApp();
   const [selected, setSelected] = useState<CsvFormatId>('generic');
   const [count, setCount] = useState(0);
@@ -41,10 +41,8 @@ export function ExportScreen() {
 
   async function handleExport() {
     if (!canUseFormat(plan, selected)) {
-      showAlert(
-        'この形式は Light 以上で使えます',
-        `${PLANS[plan].name} は汎用CSVのみ。freee/マネフォ/弥生 形式は Light 以上にアップグレードで使えます。`,
-      );
+      // Free→Light の課金壁(4.6 発火マップ)
+      router.push({ pathname: '/upgrade', params: { context: 'csv' } });
       return;
     }
     setBusy(true);

@@ -2,7 +2,9 @@
  * レシート一覧画面(S-04)。
  *
  * ローカルDB のレシートを新しい順に表示。各行タップで詳細(S-05)へ。
- * 未出力/出力済みフィルタ(FR-13 周辺)はフェーズ後半で実装するため、
+ * 検索(FR-13)は Pro 限定。Free/Light は検索バーをタップするとアップグレード画面 S-07 へ
+ * (Light→Pro の課金壁、4.6 発火マップ)。
+ * 未出力/出力済みフィルタはフェーズ後半で実装するため、
  * それまでは UI 自体を置かない(押せるのに動かないUIを作らない)。
  */
 
@@ -14,7 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppIcon } from '@/components/app-icon';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
+import { canSearch } from '@/features/billing/plan-access';
 import { ReceiptRow } from '@/features/receipts/components/receipt-row';
 import { DEMO_RECEIPTS, type ReceiptPreview } from '@/features/receipts/demo-receipts';
 import { useReceipts } from '@/features/receipts/hooks/use-receipts';
@@ -22,9 +25,10 @@ import { useApp } from '@/shared/app-context';
 
 export function ReceiptListScreen() {
   const router = useRouter();
-  const { userId } = useApp();
+  const { userId, plan } = useApp();
   const { data: receipts = [], refetch, isLoading } = useReceipts(userId);
   const [query, setQuery] = useState('');
+  const searchEnabled = canSearch(plan);
 
   // 画面に戻るたび最新化(保存直後の反映)
   useFocusEffect(
@@ -34,13 +38,13 @@ export function ReceiptListScreen() {
   );
 
   const filteredReceipts = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+    const normalized = searchEnabled ? query.trim().toLowerCase() : '';
     const source: ReceiptPreview[] = receipts.length > 0 ? receipts : DEMO_RECEIPTS;
     if (!normalized) return source;
     return source.filter((receipt) =>
       `${receipt.date} ${receipt.store} ${receipt.amountYen}`.toLowerCase().includes(normalized),
     );
-  }, [query, receipts]);
+  }, [query, receipts, searchEnabled]);
 
   return (
     <ThemedView style={styles.container}>
@@ -56,15 +60,30 @@ export function ReceiptListScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.searchBox}>
-          <AppIcon color={Palette.textSecondary} name="search" size={19} />
-          <TextInput
-            style={styles.searchInput}
-            value={query}
-            onChangeText={setQuery}
-            placeholder="日付・店名・金額で検索"
-          />
-        </View>
+        {searchEnabled ? (
+          <View style={styles.searchBox}>
+            <AppIcon color={Palette.textSecondary} name="search" size={19} />
+            <TextInput
+              style={styles.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              placeholder="日付・店名・金額で検索"
+            />
+          </View>
+        ) : (
+          <Pressable
+            accessibilityLabel="検索(Proで利用可)"
+            style={styles.searchBox}
+            onPress={() => router.push({ pathname: '/upgrade', params: { context: 'search' } })}>
+            <AppIcon color={Palette.textSecondary} name="search" size={19} />
+            <ThemedText type="small" style={styles.lockedSearchText}>
+              日付・店名・金額で検索
+            </ThemedText>
+            <ThemedText type="small" style={styles.lockedSearchBadge}>
+              Pro
+            </ThemedText>
+          </Pressable>
+        )}
 
         {!isLoading && filteredReceipts.length === 0 ? (
           <View style={styles.empty}>
@@ -129,6 +148,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   searchInput: { color: Palette.text, flex: 1, fontSize: 14, paddingVertical: Spacing.two + 2 },
+  lockedSearchText: {
+    color: Palette.textSecondary,
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: Spacing.two + 2,
+  },
+  lockedSearchBadge: { color: Brand.primaryDark, fontWeight: '800' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
   emptyText: { opacity: 0.6, textAlign: 'center' },
   list: { gap: Spacing.two, paddingBottom: Spacing.six },

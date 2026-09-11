@@ -87,32 +87,48 @@ test('詳細: 行タップ→詳細→戻る→削除(確認ダイアログ)が�
   await expect(page.getByText('¥2,222').filter({ visible: true })).toHaveCount(0);
 });
 
-test('課金壁: Freeで各社形式を選ぶと案内ダイアログが出て出力されない', async ({ page }) => {
+test('課金壁: Freeで各社形式を選ぶとアップグレード画面(S-07)へ進み出力されない', async ({ page }) => {
   await gotoHome(page);
   await addReceipt(page, '3333');
 
   await page.getByRole('link', { name: '出力' }).click();
   await expect(page.getByText(/対象: 1 件/)).toBeVisible();
 
-  // freee形式(Light以上)を選択して書き出し → 課金壁の案内
+  // freee形式(Light以上)を選択して書き出し → 課金壁(文脈=csv)
   await page.getByText('freee形式CSV').click();
-  let alertMessage = '';
-  page.once('dialog', (dialog) => {
-    alertMessage = dialog.message();
-    dialog.accept();
-  });
   await page.getByText('CSVを書き出す', { exact: true }).last().click();
-  expect(alertMessage).toContain('Light 以上');
+  await expect(page.getByText(/形式で書き出すには Light 以上が必要です/)).toBeVisible();
   // 完了画面には進まない
   await expect(page.getByText(/書き出しが完了しました/)).toHaveCount(0);
+
+  // 閉じると出力画面に戻る(撮影画面の同名ボタンがDOMに残るため可視のみ)
+  await page.getByLabel('閉じる').filter({ visible: true }).click();
+  await expect(page.getByText(/対象: 1 件/)).toBeVisible();
+
+  // Light を選ぶと(開発確認用の切替)freee形式が書き出せる
+  await page.getByText('CSVを書き出す', { exact: true }).last().click();
+  await page.getByLabel('Lightで続ける').click();
+  await expect(page.getByText(/現在のプラン: Light/)).toBeVisible();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByText('CSVを書き出す', { exact: true }).last().click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toContain('freee');
 });
 
-test('一覧: 検索ボックスで絞り込める', async ({ page }) => {
+test('一覧: 検索は Pro 限定。Free はタップで課金壁、Pro に切替後は絞り込める', async ({ page }) => {
   await gotoHome(page);
   await page.getByRole('link', { name: 'レシート' }).click();
   await expect(page.getByText('レシート一覧')).toBeVisible();
   await expect(page.getByText('スターバックス').filter({ visible: true })).toBeVisible();
 
+  // Free: 検索バーは入力欄ではなく課金壁への導線(文脈=search)
+  await expect(page.getByPlaceholder('日付・店名・金額で検索')).toHaveCount(0);
+  await page.getByLabel('検索(Proで利用可)').click();
+  await expect(page.getByText(/検索するには Pro が必要です/)).toBeVisible();
+
+  // Pro を選ぶ(開発確認用の切替)→ 一覧に戻り、検索欄が使える
+  await page.getByLabel('Proで続ける').click();
+  await expect(page.getByText('レシート一覧')).toBeVisible();
   await page.getByPlaceholder('日付・店名・金額で検索').fill('スター');
   await expect(page.getByText('スターバックス').filter({ visible: true })).toBeVisible();
   await expect(page.getByText('Amazon.co.jp').filter({ visible: true })).toHaveCount(0);

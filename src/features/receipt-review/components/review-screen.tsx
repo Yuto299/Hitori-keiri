@@ -66,11 +66,13 @@ export function ReviewScreen() {
     try {
       const used = await countReceiptsInMonth(userId, currentYearMonth());
       if (!canAddReceipt(plan, used)) {
+        // 枚数上限の課金壁(4.6 発火マップ)。上限に達した旨を伝えてから S-07 へ
         showAlert(
           '今月の上限に達しました',
-          `${PLANS[plan].name} は月 ${PLANS[plan].features.monthlyReceiptLimit} 枚までです。アップグレードで増やせます。`,
+          `${PLANS[plan].name} は月 ${PLANS[plan].features.monthlyReceiptLimit} 枚までです。`,
         );
         setSaving(false);
+        router.push({ pathname: '/upgrade', params: { context: 'limit' } });
         return;
       }
 
