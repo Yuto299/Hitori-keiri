@@ -65,6 +65,18 @@ export async function sumReceiptsInMonth(
     .reduce((total, r) => total + r.amountYen, 0);
 }
 
+export type ReceiptPatch = Partial<
+  Pick<Receipt, 'date' | 'amountYen' | 'store' | 'category' | 'memo' | 'imageStatus' | 'imagePath'>
+>;
+
+export async function updateReceipt(id: string, patch: ReceiptPatch): Promise<Receipt | null> {
+  const idx = store.findIndex((r) => r.id === id);
+  if (idx < 0) return null;
+  const next: Receipt = { ...store[idx], ...patch, updatedAt: new Date().toISOString() };
+  store[idx] = next;
+  return next;
+}
+
 export async function deleteReceipt(id: string): Promise<void> {
   const idx = store.findIndex((r) => r.id === id);
   if (idx >= 0) store.splice(idx, 1);

@@ -28,6 +28,22 @@ export async function createReceiptSynced(input: NewReceipt): Promise<Receipt> {
 }
 
 /**
+ * ローカルを更新し、サインイン中ならリモートにも upsert で反映する(FR-14 編集)。
+ * ID が同じなので upsert が更新として働く。存在しなければ null。
+ */
+export async function updateReceiptSynced(
+  id: string,
+  patch: repoNative.ReceiptPatch,
+): Promise<Receipt | null> {
+  const updated = await repoNative.updateReceipt(id, patch);
+  if (!updated) return null;
+  remote.pushRemoteReceipt(updated).catch((e) => {
+    console.warn('[sync] update push failed:', e);
+  });
+  return updated;
+}
+
+/**
  * ローカルで削除し、サインイン中ならリモートからも削除する。
  */
 export async function deleteReceiptSynced(id: string): Promise<void> {

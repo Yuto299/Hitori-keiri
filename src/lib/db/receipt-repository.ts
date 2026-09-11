@@ -161,6 +161,35 @@ export async function sumReceiptsInMonth(
   return row?.total ?? 0;
 }
 
+/** 更新可能な項目(id / userId / 作成時刻は変えない) */
+export type ReceiptPatch = Partial<
+  Pick<Receipt, 'date' | 'amountYen' | 'store' | 'category' | 'memo' | 'imageStatus' | 'imagePath'>
+>;
+
+/** 1件更新して更新後の Receipt を返す(FR-14 編集)。存在しなければ null */
+export async function updateReceipt(id: string, patch: ReceiptPatch): Promise<Receipt | null> {
+  const current = await getReceipt(id);
+  if (!current) return null;
+  const next: Receipt = { ...current, ...patch, updatedAt: new Date().toISOString() };
+  const db = await getDb();
+  await db.runAsync(
+    `UPDATE receipts
+       SET date = ?, amount_yen = ?, store = ?, category = ?, memo = ?,
+           image_status = ?, image_path = ?, updated_at = ?
+     WHERE id = ?`,
+    next.date,
+    next.amountYen,
+    next.store,
+    next.category,
+    JSON.stringify(next.memo),
+    next.imageStatus,
+    next.imagePath ?? null,
+    next.updatedAt,
+    id,
+  );
+  return next;
+}
+
 /** 削除 */
 export async function deleteReceipt(id: string): Promise<void> {
   const db = await getDb();

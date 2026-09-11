@@ -87,6 +87,28 @@ test('詳細: 行タップ→詳細→戻る→削除(確認ダイアログ)が�
   await expect(page.getByText('¥2,222').filter({ visible: true })).toHaveCount(0);
 });
 
+test('詳細: 編集で確認画面を再利用し、金額とメモの変更が反映される', async ({ page }) => {
+  await gotoHome(page);
+  await addReceipt(page, '4444');
+
+  await page.getByText('¥4,444').filter({ visible: true }).click();
+  await expect(page.getByText('レシート詳細')).toBeVisible();
+  await page.getByLabel('このレシートを編集').click();
+  await expect(page.getByText('レシートを編集')).toBeVisible();
+
+  // 既存値が初期値として入っている
+  await expect(page.getByPlaceholder('1280')).toHaveValue('4444');
+  await page.getByPlaceholder('1280').fill('5555');
+  await page.getByLabel('同席者・目的・案件名を追加').click();
+  await page.getByPlaceholder('例: ○○社 田中様').fill('山田様');
+  await page.getByText('変更を保存').click();
+
+  // 詳細画面に戻り、変更が反映されている
+  await expect(page.getByText('レシート詳細')).toBeVisible();
+  await expect(page.getByText('¥5,555').filter({ visible: true })).toBeVisible();
+  await expect(page.getByText('山田様').filter({ visible: true })).toBeVisible();
+});
+
 test('課金壁: Freeで各社形式を選ぶとアップグレード画面(S-07)へ進み出力されない', async ({ page }) => {
   await gotoHome(page);
   await addReceipt(page, '3333');

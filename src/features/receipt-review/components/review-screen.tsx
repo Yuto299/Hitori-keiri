@@ -1,13 +1,15 @@
 /**
  * 確認・編集画面(S-03)。
  *
- * OCR抽出結果(モック)を初期値に、日付/金額/店名/科目/メモを編集して承認保存(FR-07/08/09)。
- * 保存時に枚数上限(FR-22)をチェックし、Free は画像を保存しない(FR-12)。
- * 低確度の項目はラベルに印を付けて注意を促す(第6章 6.3.2)。
+ * 新規: OCR抽出結果を初期値に、日付/金額/店名/科目/メモを編集して承認保存(FR-07/08/09)。
+ *       保存時に枚数上限(FR-22)をチェックし、Free は画像を保存しない(FR-12)。
+ *       低確度の項目はラベルに印を付けて注意を促す(第6章 6.3.2)。
+ * 編集: `?mode=edit&id=<uuid>` で開くと既存レシートを読み込み、上書き保存する(FR-14)。
+ *       詳細画面(S-05)から呼ばれる。枚数上限チェックは行わない(枚数は増えない)。
  */
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,20 +20,42 @@ import { PLANS } from '@/config/plans';
 import { CATEGORIES } from '@/constants/categories';
 import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
 import { canAddReceipt } from '@/features/billing/plan-access';
-import { countReceiptsInMonth } from '@/lib/db/receipt-repository';
-import { createReceiptSynced } from '@/lib/sync/receipt-sync';
+import { countReceiptsInMonth, getReceipt } from '@/lib/db/receipt-repository';
+import { createReceiptSynced, updateReceiptSynced } from '@/lib/sync/receipt-sync';
 import { showAlert } from '@/shared/alert';
 import { useApp } from '@/shared/app-context';
-import type { CategoryId, OcrExtraction } from '@/shared/types/receipt';
+import type { CategoryId, OcrExtraction, ReceiptMemo } from '@/shared/types/receipt';
 
 function currentYearMonth(): string {
   return new Date().toISOString().slice(0, 7); // YYYY-MM
 }
 
+/** 空文字は undefined にして、メモに空キーを残さない */
+function buildMemo(fields: {
+  note: string;
+  attendees: string;
+  purpose: string;
+  project: string;
+}): ReceiptMemo {
+  const memo: ReceiptMemo = {};
+  if (fields.note.trim()) memo.note = fields.note.trim();
+  if (fields.attendees.trim()) memo.attendees = fields.attendees.trim();
+  if (fields.purpose.trim()) memo.purpose = fields.purpose.trim();
+  if (fields.project.trim()) memo.project = fields.project.trim();
+  return memo;
+}
+
 export function ReviewScreen() {
   const router = useRouter();
   const { plan, userId } = useApp();
-  const params = useLocalSearchParams<{ imageUri?: string; extraction?: string }>();
+  const params = useLocalSearchParams<{
+    imageUri?: string;
+    extraction?: string;
+    mode?: string;
+    id?: string;
+  }>();
+  const isEdit = params.mode === 'edit' && typeof params.id === 'string';
+  const editId = isEdit ? params.id : undefined;
 
   const extraction = useMemo<OcrExtraction | null>(() => {
     if (!params.extraction) return null;
@@ -52,10 +76,55 @@ export function ReviewScreen() {
     extraction?.categoryCandidates?.[0] ?? 'consumables',
   );
   const [note, setNote] = useState('');
+  const [attendees, setAttendees] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [project, setProject] = useState('');
+  const [showMoreMemo, setShowMoreMemo] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const [saving, setSaving] = useState(false);
+  // 編集モードで既存レシートの読み込みが終わるまで保存させない
+  const [editLoaded, setEditLoaded] = useState(!isEdit);
 
-  const lowAmount = (extraction?.confidence?.amount ?? 1) < 0.8;
-  const lowStore = (extraction?.confidence?.store ?? 1) < 0.8;
+  // 編集モード: 既存レシートを初期値に読み込む
+  useEffect(() => {
+    if (!editId) return;
+    let active = true;
+    getReceipt(editId).then((r) => {
+      if (!active) return;
+      if (!r) {
+        showAlert('レシートが見つかりません');
+        router.back();
+        return;
+      }
+      setDate(r.date);
+      setAmount(String(r.amountYen));
+      setStore(r.store);
+      setCategory(r.category);
+      setNote(r.memo.note ?? '');
+      setAttendees(r.memo.attendees ?? '');
+      setPurpose(r.memo.purpose ?? '');
+      setProject(r.memo.project ?? '');
+      if (r.memo.attendees || r.memo.purpose || r.memo.project) setShowMoreMemo(true);
+      setEditLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+    // router は安定参照。editId が変わった時だけ再読込
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId]);
+
+  // 科目は代表6件を先に出し、選択中の科目が含まれなければ追加表示。「すべて表示」で全件
+  const visibleCategories = useMemo(() => {
+    if (showAllCategories) return CATEGORIES;
+    const head = CATEGORIES.slice(0, 6);
+    if (head.some((c) => c.id === category)) return head;
+    const selected = CATEGORIES.find((c) => c.id === category);
+    return selected ? [...head, selected] : head;
+  }, [category, showAllCategories]);
+
+  const lowAmount = !isEdit && (extraction?.confidence?.amount ?? 1) < 0.8;
+  const lowStore = !isEdit && (extraction?.confidence?.store ?? 1) < 0.8;
 
   async function handleSave() {
     if (!date || !amount || !store) {
@@ -64,6 +133,25 @@ export function ReviewScreen() {
     }
     setSaving(true);
     try {
+      const memo = buildMemo({ note, attendees, purpose, project });
+
+      if (editId) {
+        const updated = await updateReceiptSynced(editId, {
+          date,
+          amountYen: Number(amount),
+          store,
+          category,
+          memo,
+        });
+        if (!updated) {
+          showAlert('レシートが見つかりません');
+          setSaving(false);
+          return;
+        }
+        goBack(); // 詳細画面へ戻る(useFocusEffect で再読込される)
+        return;
+      }
+
       const used = await countReceiptsInMonth(userId, currentYearMonth());
       if (!canAddReceipt(plan, used)) {
         // 枚数上限の課金壁(4.6 発火マップ)。上限に達した旨を伝えてから S-07 へ
@@ -84,7 +172,7 @@ export function ReviewScreen() {
         amountYen: Number(amount),
         store,
         category,
-        memo: note ? { note } : {},
+        memo,
         imageStatus: keepImage ? 'stored' : 'deleted',
         imagePath: keepImage ? params.imageUri : undefined,
         capturedPlan: plan,
@@ -106,6 +194,8 @@ export function ReviewScreen() {
     }
   }
 
+  const canSave = !saving && editLoaded;
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -116,9 +206,9 @@ export function ReviewScreen() {
             onPress={goBack}>
             <AppIcon color={Palette.text} name="back" size={24} />
           </Pressable>
-          <ThemedText style={styles.navTitle}>内容を確認</ThemedText>
-          <Pressable disabled={saving} onPress={handleSave}>
-            <ThemedText style={[styles.saveLink, saving && styles.disabledText]}>
+          <ThemedText style={styles.navTitle}>{isEdit ? 'レシートを編集' : '内容を確認'}</ThemedText>
+          <Pressable disabled={!canSave} onPress={handleSave}>
+            <ThemedText style={[styles.saveLink, !canSave && styles.disabledText]}>
               {saving ? '保存中' : '保存'}
             </ThemedText>
           </Pressable>
@@ -161,7 +251,7 @@ export function ReviewScreen() {
 
           <Field label="カテゴリ（勘定科目） ？">
             <View style={styles.categoryList}>
-              {CATEGORIES.slice(0, 6).map((c) => (
+              {visibleCategories.map((c) => (
                 <Pressable
                   key={c.id}
                   onPress={() => setCategory(c.id)}
@@ -174,6 +264,16 @@ export function ReviewScreen() {
                   </ThemedText>
                 </Pressable>
               ))}
+              {!showAllCategories && (
+                <Pressable
+                  accessibilityLabel="すべての科目を表示"
+                  style={styles.moreMemoButton}
+                  onPress={() => setShowAllCategories(true)}>
+                  <ThemedText type="small" style={styles.moreMemoText}>
+                    ＋ すべての科目を表示
+                  </ThemedText>
+                </Pressable>
+              )}
             </View>
           </Field>
 
@@ -186,12 +286,50 @@ export function ReviewScreen() {
             />
           </Field>
 
+          {showMoreMemo ? (
+            <>
+              <Field label="同席者(接待交際費・会議費で重要)">
+                <TextInput
+                  style={styles.input}
+                  value={attendees}
+                  onChangeText={setAttendees}
+                  placeholder="例: ○○社 田中様"
+                />
+              </Field>
+              <Field label="目的・用途">
+                <TextInput
+                  style={styles.input}
+                  value={purpose}
+                  onChangeText={setPurpose}
+                  placeholder="例: 新規案件の打合せ"
+                />
+              </Field>
+              <Field label="案件名">
+                <TextInput
+                  style={styles.input}
+                  value={project}
+                  onChangeText={setProject}
+                  placeholder="例: ○○サイト制作"
+                />
+              </Field>
+            </>
+          ) : (
+            <Pressable
+              accessibilityLabel="同席者・目的・案件名を追加"
+              style={styles.moreMemoButton}
+              onPress={() => setShowMoreMemo(true)}>
+              <ThemedText type="small" style={styles.moreMemoText}>
+                ＋ 同席者・目的・案件名を追加
+              </ThemedText>
+            </Pressable>
+          )}
+
           <Pressable
-            style={[styles.saveButton, saving && styles.disabled]}
-            disabled={saving}
+            style={[styles.saveButton, !canSave && styles.disabled]}
+            disabled={!canSave}
             onPress={handleSave}>
             <ThemedText style={styles.saveButtonText}>
-              {saving ? '保存中…' : '承認して保存'}
+              {saving ? '保存中…' : isEdit ? '変更を保存' : '承認して保存'}
             </ThemedText>
           </Pressable>
         </ScrollView>
@@ -263,6 +401,8 @@ const styles = StyleSheet.create({
   },
   warnInput: { borderColor: '#E0A100', backgroundColor: '#FFFBEF' },
   memoInput: { minHeight: 46 },
+  moreMemoButton: { alignSelf: 'flex-start', paddingVertical: Spacing.one },
+  moreMemoText: { color: Brand.primaryDark, fontWeight: '700' },
   categoryList: { gap: Spacing.two },
   categoryOption: {
     alignItems: 'center',

@@ -1,9 +1,9 @@
 /**
  * レシート詳細画面(S-05)。
  *
- * 1件の内容を表示し、削除できる(FR-14)。画像は保存ポリシー(FR-12)で
+ * 1件の内容を表示し、編集・削除できる(FR-14)。編集は確認画面(S-03)を
+ * `?mode=edit&id=` で再利用する。画像は保存ポリシー(FR-12)で
  * 「画像は削除済み(テキストのみ)」と出る場合がある(Free / 期限切れLight)。
- * 編集機能はフェーズ後半(確認画面の再利用)。
  */
 
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -15,7 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppIcon } from '@/components/app-icon';
 import { categoryName } from '@/constants/categories';
-import { Palette, Radius, Spacing } from '@/constants/theme';
+import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
 import { getReceipt } from '@/lib/db/receipt-repository';
 import { deleteReceiptSynced } from '@/lib/sync/receipt-sync';
 import { confirmAsync } from '@/shared/alert';
@@ -51,6 +51,11 @@ export function ReceiptDetailScreen() {
     } else {
       router.replace('/explore');
     }
+  }
+
+  function openEdit() {
+    if (!receipt) return;
+    router.push({ pathname: '/review', params: { mode: 'edit', id: receipt.id } });
   }
 
   async function confirmDelete() {
@@ -105,10 +110,21 @@ export function ReceiptDetailScreen() {
             <Row label="店名" value={receipt.store} />
             <Row label="勘定科目" value={categoryName(receipt.category)} />
             {receipt.memo.note ? <Row label="メモ" value={receipt.memo.note} /> : null}
+            {receipt.memo.attendees ? <Row label="同席者" value={receipt.memo.attendees} /> : null}
+            {receipt.memo.purpose ? <Row label="目的" value={receipt.memo.purpose} /> : null}
+            {receipt.memo.project ? <Row label="案件名" value={receipt.memo.project} /> : null}
 
-            <Pressable style={styles.deleteButton} onPress={confirmDelete}>
-              <ThemedText style={styles.deleteText}>削除</ThemedText>
-            </Pressable>
+            <View style={styles.actions}>
+              <Pressable
+                accessibilityLabel="このレシートを編集"
+                style={styles.editButton}
+                onPress={openEdit}>
+                <ThemedText style={styles.editText}>編集</ThemedText>
+              </Pressable>
+              <Pressable style={styles.deleteButton} onPress={confirmDelete}>
+                <ThemedText style={styles.deleteText}>削除</ThemedText>
+              </Pressable>
+            </View>
           </View>
         )}
       </SafeAreaView>
@@ -164,14 +180,24 @@ const styles = StyleSheet.create({
     borderBottomColor: Palette.divider,
   },
   rowLabel: { opacity: 0.6 },
-  rowValue: { fontWeight: '600' },
-  deleteButton: {
-    marginTop: Spacing.three,
-    paddingVertical: Spacing.three,
+  rowValue: { flexShrink: 1, fontWeight: '600', marginLeft: Spacing.three, textAlign: 'right' },
+  actions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.three },
+  editButton: {
+    alignItems: 'center',
+    borderColor: Brand.primary,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: '#E0B4B4',
+    flex: 1,
+    paddingVertical: Spacing.three,
+  },
+  editText: { color: Brand.primary, fontWeight: '700' },
+  deleteButton: {
     alignItems: 'center',
+    borderColor: '#E0B4B4',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    flex: 1,
+    paddingVertical: Spacing.three,
   },
   deleteText: { color: '#C0392B', fontWeight: '600' },
 });
