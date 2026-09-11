@@ -1,8 +1,20 @@
 # 画像 Storage 同期(Supabase Storage)
 
 > 関連: 要件 [FR-12 画像保存ポリシー](../requirements/03-functional-requirements.md) / [第5章 5.6](../requirements/05-data-model-csv.md#56-画像とストレージfr-12-との整合)
-> ステータス: 設計(未着手)
-> 最終更新: 2026-05-26
+> ステータス: **実装済み(2026-09-12)**。オーナー作業は `supabase db push` でマイグレーション適用のみ
+> 最終更新: 2026-09-12
+
+## 実装メモ(設計からの差分)
+
+- バケット作成もマイグレーションに含めた(`supabase/migrations/20260912000001_storage_receipts.sql`)。ダッシュボード操作は不要
+- upsert(再アップロード)のため Storage の `update` ポリシーも追加
+- アップロードは **保存後にバックグラウンド**で行う(UIを待たせない)。成功したら `imagePath` を Storage パスに置換してローカル/リモート双方を更新。失敗時はローカルURIのまま残す
+- `imagePath` は「Storage パス」or「端末ローカルURI」。`isRemoteImagePath()` で判別
+- 30日削除は案B(閲覧時判定)。`expireReceiptImageIfNeeded()`(lib/sync/receipt-sync.ts)を詳細画面で呼ぶ。判定ロジックは `features/receipts/image-retention.ts`(単体テストあり)
+- ダウングレード時は §7 の案B(既存は保持し、次に開いた時に現行プランで判定)
+- 実装ファイル: `lib/supabase/image-storage.ts` / `read-image-bytes(.web).ts` / `lib/sync/receipt-sync.ts` / `features/receipts/image-retention.ts` / `receipt-detail-screen.tsx`
+
+---
 
 ---
 

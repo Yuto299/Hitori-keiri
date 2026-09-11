@@ -4,6 +4,8 @@
  * 1件の内容を表示し、編集・削除できる(FR-14)。編集は確認画面(S-03)を
  * `?mode=edit&id=` で再利用する。画像は保存ポリシー(FR-12)で
  * 「画像は削除済み(テキストのみ)」と出る場合がある(Free / 期限切れLight)。
+ * 開いた時点で現行プランの保存期限を判定し、期限切れなら画像を削除する(閲覧時判定)。
+ * Storage 上の画像は署名付きURLで表示する。Pro 未満で消えた画像を見ようとしたら S-07 へ。
  */
 
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -16,15 +18,23 @@ import { ThemedView } from '@/components/themed-view';
 import { AppIcon } from '@/components/app-icon';
 import { categoryName } from '@/constants/categories';
 import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
+import { imageExpiresAt } from '@/features/receipts/image-retention';
 import { getReceipt } from '@/lib/db/receipt-repository';
-import { deleteReceiptSynced } from '@/lib/sync/receipt-sync';
+import {
+  deleteReceiptSynced,
+  expireReceiptImageIfNeeded,
+  resolveReceiptImageUrl,
+} from '@/lib/sync/receipt-sync';
 import { confirmAsync } from '@/shared/alert';
+import { useApp } from '@/shared/app-context';
 import type { Receipt } from '@/shared/types/receipt';
 
 export function ReceiptDetailScreen() {
   const router = useRouter();
+  const { plan } = useApp();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useFocusEffect(
@@ -32,16 +42,22 @@ export function ReceiptDetailScreen() {
       let active = true;
       (async () => {
         if (!id) return;
-        const r = await getReceipt(id);
+        let r = await getReceipt(id);
+        if (r) {
+          // 保存ポリシー(FR-12)を閲覧時に適用
+          r = await expireReceiptImageIfNeeded(r, plan);
+        }
+        const url = r ? await resolveReceiptImageUrl(r) : null;
         if (active) {
           setReceipt(r);
+          setImageUrl(url);
           setLoaded(true);
         }
       })();
       return () => {
         active = false;
       };
-    }, [id]),
+    }, [id, plan]),
   );
 
   // 履歴がない(URL直叩き・リロード)場合は一覧へ戻す
@@ -96,14 +112,38 @@ export function ReceiptDetailScreen() {
         {receipt && (
           <View style={styles.body}>
             <View style={styles.imageBox}>
-              {receipt.imageStatus === 'stored' && receipt.imagePath ? (
-                <Image source={{ uri: receipt.imagePath }} style={styles.image} resizeMode="contain" />
-              ) : (
+              {receipt.imageStatus === 'stored' && imageUrl ? (
+                <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="contain" />
+              ) : receipt.imageStatus === 'stored' ? (
+                <ThemedText type="small" style={styles.imageDeleted}>
+                  画像を表示できません(オフラインまたは未サインイン)
+                </ThemedText>
+              ) : plan === 'pro' ? (
                 <ThemedText type="small" style={styles.imageDeleted}>
                   画像は削除済み(テキストのみ保持)
                 </ThemedText>
+              ) : (
+                // Light→Pro の課金壁(4.6 発火マップ: 消えた画像を見ようとした時)
+                <Pressable
+                  accessibilityLabel="画像を残すにはアップグレード"
+                  style={styles.imageUpsell}
+                  onPress={() =>
+                    router.push({ pathname: '/upgrade', params: { context: 'image' } })
+                  }>
+                  <ThemedText type="small" style={styles.imageDeleted}>
+                    画像は削除済み(テキストのみ保持)
+                  </ThemedText>
+                  <ThemedText type="small" style={styles.imageUpsellLink}>
+                    {plan === 'free' ? 'Light 以上で画像を残せます' : 'Pro なら無期限で残せます'} →
+                  </ThemedText>
+                </Pressable>
               )}
             </View>
+            {receipt.imageStatus === 'stored' && imageExpiresAt(receipt, plan) && (
+              <ThemedText type="small" style={styles.expiryNote}>
+                画像の保存期限: {imageExpiresAt(receipt, plan)!.slice(0, 10)}(Light は30日間)
+              </ThemedText>
+            )}
 
             <Row label="日付" value={receipt.date} />
             <Row label="金額" value={`¥${receipt.amountYen.toLocaleString()}`} />
@@ -172,6 +212,9 @@ const styles = StyleSheet.create({
   },
   image: { width: '100%', height: '100%' },
   imageDeleted: { opacity: 0.6 },
+  imageUpsell: { alignItems: 'center', gap: Spacing.one, padding: Spacing.three },
+  imageUpsellLink: { color: Brand.primaryDark, fontWeight: '700' },
+  expiryNote: { color: Palette.textSecondary, marginTop: -Spacing.two },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',

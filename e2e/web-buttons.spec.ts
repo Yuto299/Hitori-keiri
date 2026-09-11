@@ -137,6 +137,19 @@ test('課金壁: Freeで各社形式を選ぶとアップグレード画面(S-07
   expect(download.suggestedFilename()).toContain('freee');
 });
 
+test('詳細: Free で消えた画像の案内をタップすると課金壁(文脈=image)へ', async ({ page }) => {
+  await gotoHome(page);
+  await addReceipt(page, '7777');
+  await page.getByText('¥7,777').filter({ visible: true }).click();
+  await expect(page.getByText('レシート詳細')).toBeVisible();
+
+  // Free は画像を保存しない(FR-12)ので削除済み表示 + アップグレード導線
+  await page.getByLabel('画像を残すにはアップグレード').click();
+  await expect(page.getByText(/画像を無期限で残すには Pro が必要です/)).toBeVisible();
+  await page.getByLabel('閉じる').filter({ visible: true }).click();
+  await expect(page.getByText('レシート詳細')).toBeVisible();
+});
+
 test('出力: 期間指定(年/月/任意範囲)で対象件数が変わり、ファイル名に期間が入る', async ({ page }) => {
   await gotoHome(page);
   await addReceipt(page, '6666'); // モックOCRの日付は今日

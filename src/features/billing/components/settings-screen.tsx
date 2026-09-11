@@ -20,6 +20,7 @@ import { Brand, Palette, Radius, Spacing } from '@/constants/theme';
 import { AuthForm } from '@/features/auth/components/auth-form';
 import { signOut } from '@/features/auth/hooks/use-auth';
 import { remainingReceipts } from '@/features/billing/plan-access';
+import { retentionLabel } from '@/features/receipts/image-retention';
 import { isSupabaseConfigured } from '@/lib/env';
 import { countReceiptsInMonth } from '@/lib/db/receipt-repository';
 import { useApp } from '@/shared/app-context';
@@ -93,9 +94,7 @@ export function SettingsScreen() {
                 <AppIcon color={Palette.textSecondary} name="gallery" size={17} />
                 <ThemedText type="small">画像の保存期間</ThemedText>
               </View>
-              <ThemedText type="small">
-                {plan === 'free' ? '保存なし' : plan === 'light' ? 'あと18日' : '無期限'}
-              </ThemedText>
+              <ThemedText type="small">{retentionLabel(plan)}</ThemedText>
             </View>
             {limit !== null && (
               <ThemedText type="small" style={styles.remainingText}>
